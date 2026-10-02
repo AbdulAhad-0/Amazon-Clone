@@ -98,10 +98,13 @@ function buildTurns(entries) {
   return turns;
 }
 
-function countOf(content, type) {
-  if (!content) return 0;
-  const re = new RegExp(`^\\[LOG_ENTRY type=${type} num=`, "gm");
-  return (content.match(re) || []).length;
+function numsOf(content, type) {
+  const set = new Set();
+  if (!content) return set;
+  const re = new RegExp(`^\\[LOG_ENTRY type=${type} num=(\\d+) `, "gm");
+  let match;
+  while ((match = re.exec(content)) !== null) set.add(Number(match[1]));
+  return set;
 }
 
 function buildHeader({ sessionId, firstMs, model }) {
@@ -250,7 +253,8 @@ export default async function CapturePlugin({ client, directory }) {
     return true;
   }
 
-  async function sync(sessionID) {
+  async function sync(sessionID, options) {
+    const complete = !!(options && options.complete);
     const sid = String(sessionID);
     const written = { prompts: 0, responses: 0 };
     const session = unwrap(await client.session.get({ path: { id: sid } }));
@@ -305,8 +309,10 @@ export default async function CapturePlugin({ client, directory }) {
       }
     }
 
-    const promptCount = countOf(existing, "PROMPT");
-    const responseCount = countOf(existing, "RESPONSE");
+    const promptNums = numsOf(existing, "PROMPT");
+    const responseNums = numsOf(existing, "RESPONSE");
+    let promptTotal = promptNums.size;
+    let nextPromptNum = (promptNums.size ? Math.max(...promptNums) : 0) + 1;
 
     if (!state.sessions[sid]) state.sessions[sid] = {};
     const sessState = state.sessions[sid];
@@ -315,43 +321,43 @@ export default async function CapturePlugin({ client, directory }) {
     turns.forEach((t, i) => {
       const msgId = t.user.id || `turn-${i}`;
       if (sessState[msgId]) return;
-      if (i < promptCount || i < responseCount) {
+      const num = i + 1;
+      if (promptNums.has(num) || responseNums.has(num)) {
         sessState[msgId] = {
-          p: i < promptCount,
-          r: i < responseCount,
-          n: i + 1,
+          p: promptNums.has(num),
+          r: responseNums.has(num),
+          n: num,
         };
         stateDirty = true;
       }
     });
 
-    let prompts = promptCount;
-    let responses = responseCount;
     const sid8 = shortId(sid);
 
     for (let i = 0; i < turns.length; i++) {
       const turn = turns[i];
       const msgId = turn.user.id || `turn-${i}`;
       const st = sessState[msgId] || (sessState[msgId] = {});
-      const promptLogged = st.p === true || i < prompts;
-      const responseLogged = st.r === true || i < responses;
+      const num = st.n || i + 1;
+      const promptLogged = st.p === true || promptNums.has(num);
+      const responseLogged = st.r === true || responseNums.has(num);
       const last = turn.assistants.length
         ? turn.assistants[turn.assistants.length - 1]
         : null;
+      const responseText = turn.assistants
+        .map((a) => a.text)
+        .filter((x) => x && x.trim())
+        .join("\n\n");
+      const turnComplete = complete || i < turns.length - 1;
 
       if (turn.assistants.length > 1) {
-        const dropped = turn.assistants
-          .slice(0, -1)
-          .reduce((n, a) => n + (a.text ? a.text.length : 0), 0);
-        if (dropped > 0) {
-          debug(
-            `turn ${msgId} session=${sid8}: ${turn.assistants.length} assistant messages, last one used, ${dropped} chars of earlier assistant text not written`,
-          );
-        }
+        debug(
+          `turn ${msgId} session=${sid8}: ${turn.assistants.length} assistant messages, ${responseText.length} chars of text concatenated`,
+        );
       }
 
       if (!promptLogged) {
-        const num = prompts + 1;
+        const n = nextPromptNum++;
         const ts =
           iso(toMs(turn.user.time && turn.user.time.created) || firstMs) ||
           iso(Date.now());
@@ -363,43 +369,41 @@ export default async function CapturePlugin({ client, directory }) {
           turn.prompt && turn.prompt.trim()
             ? turn.prompt
             : "(no text content in this prompt)";
-        await appendEntry(file, "type=PROMPT", num, sid8, ts, model, body);
-        prompts += 1;
+        await appendEntry(file, "type=PROMPT", n, sid8, ts, model, body);
+        promptNums.add(n);
+        promptTotal += 1;
         written.prompts += 1;
         st.p = true;
-        st.n = num;
+        st.n = n;
         stateDirty = true;
         await saveState();
         await updateFrontmatter(file, {
-          total: prompts,
+          total: promptTotal,
           lastPromptTime: ts,
         });
         debug(
-          `wrote PROMPT num=${num} session=${sid8} ${body.length} chars model=${model}`,
+          `wrote PROMPT num=${n} session=${sid8} ${body.length} chars model=${model}`,
         );
       }
 
-      if (!responseLogged && last) {
-        const num = st.n || i + 1;
-        const tinfo = last.info || {};
+      if (!responseLogged && turnComplete) {
+        const n = st.n || i + 1;
+        const tinfo = (last && last.info) || {};
         const ts =
           iso(
             toMs(tinfo.time && (tinfo.time.completed || tinfo.time.created)) ||
               Date.now(),
           ) || iso(Date.now());
         const model = modelOf(tinfo) || FALLBACK_MODEL;
-        const body =
-          last.text && last.text.trim()
-            ? last.text
-            : "(no assistant text in this turn)";
-        await appendEntry(file, "type=RESPONSE", num, sid8, ts, model, body);
-        responses += 1;
+        const body = responseText || "(no assistant text in this turn)";
+        await appendEntry(file, "type=RESPONSE", n, sid8, ts, model, body);
+        responseNums.add(n);
         written.responses += 1;
         st.r = true;
         stateDirty = true;
         await saveState();
         debug(
-          `wrote RESPONSE num=${num} session=${sid8} ${body.length} chars model=${model}`,
+          `wrote RESPONSE num=${n} session=${sid8} ${body.length} chars model=${model}`,
         );
       }
     }
@@ -423,7 +427,9 @@ export default async function CapturePlugin({ client, directory }) {
           if (!s || !s.id || skipSession(s)) continue;
           if (!(await belongs(s))) continue;
           scanned += 1;
-          const written = await enqueue(s.id, () => sync(s.id));
+          const written = await enqueue(s.id, () =>
+            sync(s.id, { complete: true }),
+          );
           if (written && typeof written === "object") {
             totals.prompts += written.prompts || 0;
             totals.responses += written.responses || 0;
@@ -450,7 +456,7 @@ export default async function CapturePlugin({ client, directory }) {
         const sid = props.sessionID || (props.session && props.session.id);
         if (sid) {
           debug(`event session.idle session=${String(sid).slice(0, 8)}`);
-          await enqueue(sid, () => sync(sid));
+          await enqueue(sid, () => sync(sid, { complete: true }));
         }
         return;
       }
@@ -466,7 +472,9 @@ export default async function CapturePlugin({ client, directory }) {
           debug(
             `event message.updated(user) session=${String(info.sessionID).slice(0, 8)}`,
           );
-          await enqueue(info.sessionID, () => sync(info.sessionID));
+          await enqueue(info.sessionID, () =>
+            sync(info.sessionID, { complete: false }),
+          );
         }
       }
     } catch (err) {

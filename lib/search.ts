@@ -42,7 +42,7 @@ function first(value: string | string[] | undefined): string | undefined {
   return t === "" ? undefined : t;
 }
 
-function dollarsToCents(value: string | undefined): number | undefined {
+export function dollarsToCents(value: string | undefined): number | undefined {
   if (value === undefined || !/^\d+(\.\d{1,2})?$/.test(value)) return undefined;
   return Math.round(parseFloat(value) * 100);
 }
@@ -82,6 +82,26 @@ export function parseSearchParams(raw: SearchParams): ParsedSearchParams {
   }
 
   return out;
+}
+
+// ---- URL building (rail + sheet both write through this one helper) ----
+
+function centsToDollars(cents: number): string {
+  return (cents / 100).toString();
+}
+
+export function buildSearchUrl(parsed: ParsedSearchParams): string {
+  const params = new URLSearchParams();
+  if (parsed.q !== undefined) params.set("q", parsed.q);
+  if (parsed.group !== undefined) params.set("group", parsed.group);
+  if (parsed.brand !== undefined) params.set("brand", parsed.brand);
+  if (parsed.minCents !== undefined) params.set("min", centsToDollars(parsed.minCents));
+  if (parsed.maxCents !== undefined) params.set("max", centsToDollars(parsed.maxCents));
+  if (parsed.rating !== undefined) params.set("rating", String(parsed.rating));
+  if (parsed.sort !== "relevance") params.set("sort", parsed.sort);
+  if (parsed.page !== 1) params.set("page", String(parsed.page));
+  const qs = params.toString();
+  return qs === "" ? "/search" : `/search?${qs}`;
 }
 
 // ---- query execution (validated values only; eq/in are bound params) ----

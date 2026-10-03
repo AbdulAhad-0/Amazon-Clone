@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildQOrClause, escapeLike, parseSearchParams } from "../lib/search";
+import { buildQOrClause, buildSearchUrl, escapeLike, parseSearchParams } from "../lib/search";
 
 describe("escapeLike", () => {
   it("escapes LIKE wildcards % _ \\ and *", () => {
@@ -115,5 +115,42 @@ describe("buildQOrClause — injection safety", () => {
       expect(clause.startsWith('title.ilike."')).toBe(true);
       expect(clause.endsWith('"')).toBe(true);
     }
+  });
+});
+
+describe("buildSearchUrl — URL state round-trip", () => {
+  it("defaults build to /search with no query string", () => {
+    expect(buildSearchUrl(parseSearchParams({}))).toBe("/search");
+    expect(buildSearchUrl(parseSearchParams({ sort: "relevance", page: "1" }))).toBe("/search");
+  });
+
+  it("round-trips parse → build → parse for a full filter set", () => {
+    const raw = {
+      q: "shirt",
+      group: "electronics",
+      brand: "Bose",
+      min: "20",
+      max: "100.5",
+      rating: "4",
+      sort: "price_asc",
+      page: "3",
+    };
+    const parsed = parseSearchParams(raw);
+    const url = buildSearchUrl(parsed);
+    expect(url.startsWith("/search?")).toBe(true);
+    const rebuilt = Object.fromEntries(new URLSearchParams(url.slice(url.indexOf("?") + 1)));
+    expect(parseSearchParams(rebuilt)).toEqual(parsed);
+  });
+
+  it("keeps dollars in the URL, never cents", () => {
+    const url = buildSearchUrl(parseSearchParams({ min: "20", max: "100.5" }));
+    expect(url).toContain("min=20");
+    expect(url).toContain("max=100.5");
+    expect(url).not.toContain("2000");
+    expect(url).not.toContain("10050");
+  });
+
+  it("encodes q safely", () => {
+    expect(buildSearchUrl(parseSearchParams({ q: "men's" }))).toBe("/search?q=men%27s");
   });
 });

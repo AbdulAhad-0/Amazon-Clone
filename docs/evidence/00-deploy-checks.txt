@@ -1,0 +1,22 @@
+.Slice 0 — Task 5 production verification (2026-10-03)
+========================================================
+
+URL: https://amazon-clone-eight-beryl.vercel.app/
+
+1) Poll of / and /robots.txt (node poll-prod.js, 10s interval):
+   2026-10-03T09:10:58.979Z home:200 robots:200 noindex:true robots:true vendra:true htmlLen:11436
+   VERIFIED  (exit 0)
+
+2) Playwright (system Edge) assertions on the live page:
+   meta robots: noindex, nofollow
+   body_bg: rgb(250, 248, 244)   (paper)
+   accent:  rgb(59, 63, 168)     (indigo #3B3FA8)
+   demo notice: 1
+   robots.txt body: 'User-Agent: *\nDisallow: /\n\n'
+   RESULT: PASS
+
+3) Screenshots: docs/evidence/00-deploy.png (home),
+   docs/evidence/00-deploy-robots.png (robots.txt).
+
+Pre-push secret scan: git ls-files | Select-String "\.env" -> only .env.example.
+Push: git push origin main -> 2aca822..37e0b3c (Git integration auto-builds).

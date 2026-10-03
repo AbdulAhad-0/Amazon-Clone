@@ -5,9 +5,9 @@ author: Abdulahad-0
 model: opencode/mimo-v2.6-flash-free
 tool: opencode
 project: amazon-clone
-total_exchanges: 38
+total_exchanges: 45
 first_prompt_time: 2026-10-02T19:45:44.242Z
-last_prompt_time: 2026-10-03T13:28:03.835Z
+last_prompt_time: 2026-10-03T14:22:56.229Z
 ---
 
 # Session Log - 2026-10-02
@@ -1937,3 +1937,207 @@ HOW TO WORK
 - Before every build: kill all node/next processes, never build while a server runs, one server at a time. If a check fails twice, STOP and report facts, no new theories.
 - If this session becomes slow, stop after the last finished part, commit, and tell me; I will continue in a new session from docs/progress.md.
 - At the end report: real command results, time taken per part, what cost the most time.  
+
+
+[LOG_ENTRY type=RESPONSE num=38 session=ses_f01d]
+timestamp: 2026-10-03T13:32:29.704Z
+model: opencode/mimo-v2.6-flash-free
+
+Slice 4 is DONE with command output cited (line 14: typecheck exit=0, test 40/40, build, verify-profiles 9/9, e2e 47/47). Proceeding to read the plan and spec sections.
+
+
+[LOG_ENTRY type=PROMPT num=39 session=ses_f01d]
+timestamp: 2026-10-03T13:35:55.580Z
+model: opencode/mimo-v2.6-flash-free
+
+do it . complete all of it fast .
+
+
+[LOG_ENTRY type=RESPONSE num=39 session=ses_f01d]
+timestamp: 2026-10-03T13:39:01.512Z
+model: opencode/mimo-v2.6-flash-free
+
+(no assistant text in this turn)
+
+
+[LOG_ENTRY type=PROMPT num=40 session=ses_f01d]
+timestamp: 2026-10-03T13:39:01.517Z
+model: opencode/mimo-v2.6-flash-free
+
+(no text content in this prompt)
+
+
+[LOG_ENTRY type=RESPONSE num=40 session=ses_f01d]
+timestamp: 2026-10-03T13:40:36.847Z
+model: opencode/mimo-v2.6-flash-free
+
+## Objective
+- Execute the VENDRA rebuild slice-by-slice per `docs/plans/slice-*.md`, inline with executing-plans (no subagents), owner steering inline. Current session: **Slice 5 (Cart incl. guest cart + merge), seed cleanup (Part 1, DONE), category pages (Part 3), home page (Part 4)** — order of work Part 1→2→3→4, commit each part (code/docs/logs separately, no push), 2-3 progress.md lines + 5-line status after each part, continue without waiting unless something failed.
+
+## Important Details
+- Working dir: `C:\Users\Precision 5530\OneDrive\Desktop\Amazon Clone`; branch `main`; Vercel auto-builds on push — **owner says do not push**; 3 unpushed commits at end of Slice 4 close (owner pushes batches themselves).
+- **Slice 4 is DONE** with cited output (`npm run typecheck` exit=0, `npm test` 40/40, clean build, `verify-profiles` 9/9, `npm run e2e` **47/47** incl. D8/D3b/D10b) — prerequisite for current session satisfied.
+- **D8 bug resolved (verified):** fix = **option 1** — sign-out button (client) calls action → `router.refresh()` → `router.replace("/")`; hard-nav fallback NOT needed. `redirect("/")` removed from `signOut` action (kept `revalidatePath("/", "layout")`). Header session read moved out of root layout into request-time `UserSlot` behind `<Suspense>` in `Header.tsx` (per installed `node_modules/next/dist/docs/01-app/02-guides/authentication-with-cache-components.md`); `app/layout.tsx` no longer reads session. Playwright Python API: `expect(locator).to_be_visible(timeout=5000)` (NOT `locator.expect_visible` — that caused an earlier harness crash).
+- **Owner rules (current session):** read `docs/progress.md` first (done; Slice 4 DONE), also `docs/plans/slice-5.md`, spec's "No surprises" §7a + business-rules §4 (read); executing-plans inline, no subagents; do not skip functionality, do not lower UI bar; append e2e checks and run e2e **once after Part 2 and once at end**; no throwaway probe scripts; screenshots only for home/category/cart/product at 1280+390 → `docs/evidence/`; **before every build kill all node/next, never build while server runs, one server at a time; a check failing twice → STOP and report facts**; if session slows, stop after last finished part, commit, report; at end report real command results, time per part, biggest time cost.
+- **UI quality bar (Parts 3/4 + every card):** existing tokens only (indigo accent, paper bg, serif display headings, sans UI), NO hard-coded hex in components; 8px grid, one max content width, type scale; prices heavier than titles, struck-through list price, accent deal badge; product card = square image box `object-contain` on white, fixed aspect ratio (CLS <0.1), 1px line border, rounded, hover lift+shadow, title clamped 2 lines, Add-to-cart reachable on touch; focus rings, keyboard, contrast, prefers-reduced-motion, layout-matching skeletons, empty states with next action, error states with retry, no raw server errors; check 1280 & 390px for home/category/cart/product — no horizontal scroll, ≥44px tap targets.
+- **Business rules (spec §4):** `effective_price_cents = floor(price_cents × (100−discount_pct)/100)` (in `lib/shop.ts`); shipping free subtotal ≥ 3500¢ else 599¢; tax = 8% rounded; all cart/summary computed **server-side** (ADR-004/016); "No surprises" theme = total shown before checkout.
+- **Part 1 constraints:** never ship "amazon" branding; exclude amazon-named seed products; ADR-021 gets new counts.
+- **Part 2 specifics:** localStorage stores ONLY `{productId, qty}` (never prices); defensive parse (malformed→empty cart), qty clamp 1..min(stock,30), unknown/removed products dropped with notice; badge works guest+signed-in, syncs across tabs; merge on sign-in = ONE idempotent server action (qty added, capped stock & 30), clear localStorage only after server confirms, test double run; cart_items RLS + UNIQUE(user_id, product_id) + stock check inside action, optimistic updates with rollback + toast; /cart page (lines with image/title/unit price/qty stepper/remove/line total; server-computed summary: subtotal, est. shipping, est. tax, total, free-shipping progress; one primary "Checkout" button); Checkout/Buy now require sign-in and return shopper with cart intact; add-to-cart anywhere shows toast "Added - View cart"; **write ALL migration .sql files first, tell owner ONCE which to paste in SQL Editor, wait, then show real verification output**; tests first for RLS, merge, clamp, money.
+- **Part 3 specs:** header band (name, count, one-line description); sub-category chips with counts, "All" first, URL state; sorts: Top rated (default), Price asc, Price desc, Newest, Biggest discount — **NO "Best sellers"** (note in progress.md: real Best sellers from order_items = task after Slice 6); filters brand/price/rating/deals-only, desktop rail + mobile sheet + chips + Clear all, all URL state, **reuse Slice 3 query builder/components/escaping with group fixed, no duplication**; "Top rated in {group}" rail of 8 on page 1 no filters; 24/page pagination URL state; cards show Deal badge with %; empty/loading/error states; unknown group → branded not-found.
+- **Part 4 specs:** header on home; footer row of links to existing pages only + demo notice; typographic hero (no gradient/stock photo, warm paper bg, large serif headline, one "Browse" button, "No surprises" promise); trust strip of 3 facts from real constants (total before checkout, free shipping threshold, cancel before ships); category tiles with name+count (only groups with products); rails: "Top rated" (seed_rating_avg desc, then id), "Deals" (discount_pct>0), one rail per group (8 products + "See all"); horizontal scroll on phones; no fake counts, no wishlist heart; **report HTML size of `/` in KB**; server-render rails, lazy-load below-fold images.
+- **Supabase SQL: no psql, no supabase CLI, no DB URL in .env.local** (only `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`) → **owner must paste migration SQL in the SQL Editor; cannot self-apply**.
+- Environment patterns: with_server: `python "C:\Users\Precision 5530\.agents\skills\webapp-testing\scripts\with_server.py" --server "npm run start" --port 3000 --timeout 60 -- cmd /c "npm run e2e"` (bare npm fails → wrap `cmd /c`); with_server's stop does NOT kill node → kill `next` processes manually after runs; Playwright `channel="msedge"`, `wait_until="domcontentloaded"`; PowerShell 5.1 quirks (no heredoc, literal quoted paths); kill node BEFORE build; supabase-js dual response shape `{user}` vs `{data:{user}}` under tsx vs vitest (`userOf()`/`errOf()` helpers); no `lint` script (typecheck+test+build); no shadcn → native HTML + Tailwind; ADR-022 rating display (never "3 ratings"); Orders/Account disabled non-links until Slices 7+; known issue `/c/nope`,`/p/nope` branded 404 but HTTP 200.
+- Seed counts now **183 products / 22 categories / 6 nav groups / 422 images** (was 184/22/6-nav after furniture merge).
+- Existing lib surface: `lib/shop.ts` (`effectivePriceCents`, `shippingCents`, `taxCents`, `costBreakdown`), `lib/money.ts` (`formatCents`, `parseDollarsToCents`), `lib/search.ts`, `lib/safe-next.ts`, `lib/supabase/{admin,client,server,getUser}.ts`.
+- App routes: `app/(shop)/page.tsx` (home), `(shop)/c/[group]/page.tsx` + `loading.tsx`, `(shop)/p/[slug]/page.tsx`, `(shop)/search/page.tsx`, `(shop)/{error,loading,not-found}.tsx`, `(account)/{signin,signup}/page.tsx`, `(account)/actions.ts`, `api/suggest/route.ts`. Components: `components/shop/{ProductCard,ProductGrid,FilterRail,FilterSheet,ActiveFilters,NavGroupGrid,BuyBox,Gallery,ProductImage,RatingStars,Skeletons}.tsx`, `components/layout/{Header,Footer,AccountMenu,SearchSuggest}.tsx`.
+- Migrations so far: `0001_nav_groups.sql`–`0005_profiles.sql`; next = `0006_cart.sql` (to write).
+
+## Work State
+### Completed
+- **Slices 0–4 all DONE** with cited commands (Slice 3: 28/28 e2e; Slice 4: 47/47 e2e, typecheck 0, tests 40/40, build 0).
+- **Slice 4 close-out:** commits `dc2babc fix: clear stale header after sign-out + per-request header session`, `720e7ee docs: slice 4 DONE evidence + progress`, `ac19e1f logs: slice 4 session close`; progress.md Slice 4 = DONE with full command output + D8/D3b/D10b cited; notes updated (Next action = Slice 5); port 3000 free; not pushed. Final e2e prep: killed all node, port free, `.next` deleted, clean build (all routes ƒ), single server; A19 `/search?q=men's` timeout did NOT recur.
+- **Part 1 (Seed cleanup) DONE, committed:** removed `amazon-echo-plus` from `data/seed-products.json` (node script, 16-line diff, format byte-identical); `npm run seed` → `deleted products=1`, `categories=22 products=183 images=422`; `npm run verify-seed` → `verify-seed: OK` exit=0 (`counts nav_groups=6 categories=22 products=183 images=422`, `baseline seed_rating_gt0=183 with_images=183`, `price_fn 500`); updated `scripts/verify-seed.ts` (184→183) and `scripts/fetch-seed.ts` (`EXCLUDED_TITLE_RE = /amazon/i` applied in keptSource filter, `EXPECTED_SEED_PRODUCTS = 183`, comment updated); ADR-021 gained follow-up line in `docs/decisions.md`; progress.md "Slice 5 session — Part 1 notes (2026-10-03)" added. Commits: `d00112f chore: drop amazon-named product from seed (183/22/6)`, `ee1e7f1 docs: ADR-021 follow-up seed counts + part 1 progress`, `a14cab3 logs: slice 5 session part 1`.
+- Read `docs/progress.md`, `docs/plans/slice-5.md`, spec §4 business rules + §7a "No surprises"; surveyed app/lib/component structure, `lib/shop.ts`, `lib/money.ts`, `components/shop/BuyBox.tsx`.
+
+### Active
+- **Part 2 (Slice 5 Cart)** just starting: exploration done (env keys, no psql/CLI, migrations list, money/shop libs, BuyBox pattern). No cart code or migration written yet.
+
+### Blocked
+- **Migration paste:** no self-apply path for SQL — after writing `supabase/migrations/0006_cart.sql` must tell owner once to paste it, then wait for confirmation before RLS/merge verification tests. (Build non-DB pieces meanwhile: guest cart lib, UI, toasts, /cart page scaffold.)
+
+## Next Move
+1. Part 2: write `supabase/migrations/0006_cart.sql` first (cart_items + UNIQUE(user_id, product_id) + own-row RLS), tell owner once to paste it; in parallel build guest-cart client lib (`{productId, qty}` only, defensive parse, qty clamp), server actions (add/setQty/merge — idempotent merge, stock check inside actions, server-computed totals via `lib/shop.ts`), header badge (guest localStorage + signed-in server count, cross-tab `storage` event), toast "Added - View cart", `/cart` page, tests-first (RLS, merge double-run, clamp, money), append e2e checks, run e2e once after Part 2 (kill node, build first).
+2. Then Part 3 (category page — reuse Slice 3 search components with group fixed, sorts per spec, no Best sellers), Part 4 (home upgrade, HTML size report), final e2e + screenshots (home/category/cart/product × 1280/390), progress.md per part, commits code/docs/logs per part, 5-line status after each part, final report (real results, time per part, biggest cost). Do not push.
+
+## Relevant Files
+- `supabase/migrations/0006_cart.sql`: to write first (Part 2 gate — owner pastes).
+- `app/(account)/actions.ts`: auth actions; `signOut` = action + client refresh/replace (D8 fix, no redirect).
+- `lib/shop.ts` / `lib/money.ts`: business-rule constants + formatters (cart summary must reuse).
+- `components/shop/BuyBox.tsx`: PDP qty/cost pattern (server-computed); add-to-cart + toast hooks here.
+- `components/shop/ProductCard.tsx`, `ProductGrid.tsx`, `FilterRail.tsx`, `FilterSheet.tsx`, `ActiveFilters.tsx`, `Skeletons.tsx`: reuse for Part 3 cards/filters.
+- `lib/search.ts`: Slice 3 query builder to reuse with group fixed (Part 3).
+- `app/(shop)/c/[group]/page.tsx`, `app/(shop)/page.tsx`: Part 3 / Part 4 targets.
+- `components/layout/Header.tsx` (UserSlot + Suspense, cart icon placeholder), `Footer.tsx`, `AccountMenu.tsx`.
+- `e2e/matrix.py` (`npm run e2e`, 47 checks): append cart/category/home checks; Phase D has D3b/D8/D10b auto-waiting expects.
+- `docs/progress.md`, `docs/decisions.md` (ADR-021), `docs/plans/slice-5.md`, `docs/spec.md` (§4, §7a), `docs/evidence/`.
+- `scripts/seed.ts`, `scripts/verify-seed.ts`, `scripts/fetch-seed.ts`, `data/seed-products.json`: seed now 183/22/6/422.
+- `tests/` (`safe-next.test.ts`, `rls_profiles.test.ts`): test patterns for new cart tests.
+
+
+[LOG_ENTRY type=PROMPT num=41 session=ses_f01d]
+timestamp: 2026-10-03T13:40:36.855Z
+model: opencode/mimo-v2.6-flash-free
+
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+
+
+[LOG_ENTRY type=RESPONSE num=41 session=ses_f01d]
+timestamp: 2026-10-03T13:46:30.427Z
+model: opencode/mimo-v2.6-flash-free
+
+Slice 5 plan read. Starting Part 2 — migration first so the owner can paste while I build the rest.
+
+**→ OWNER: please paste ONE file into the Supabase SQL Editor now:** `supabase/migrations/0006_cart.sql` (creates `cart_items` + `cart_merges` with own-row RLS). Tell me when it's applied. Meanwhile I keep building the non-DB pieces.
+
+
+[LOG_ENTRY type=PROMPT num=42 session=ses_f01d]
+timestamp: 2026-10-03T13:46:34.242Z
+model: opencode/mimo-v2.6-flash-free
+
+done
+
+
+[LOG_ENTRY type=RESPONSE num=42 session=ses_f01d]
+timestamp: 2026-10-03T13:46:36.504Z
+model: opencode/mimo-v2.6-flash-free
+
+(no assistant text in this turn)
+
+
+[LOG_ENTRY type=PROMPT num=43 session=ses_f01d]
+timestamp: 2026-10-03T14:15:39.924Z
+model: opencode/mimo-v2.6-flash-free
+
+please complete it fast so that we a go to next slice
+
+
+[LOG_ENTRY type=RESPONSE num=43 session=ses_f01d]
+timestamp: 2026-10-03T14:21:47.401Z
+model: opencode/mimo-v2.6-flash-free
+
+Proxy already guards `/checkout` (D0 safe). Adding the missing merge-on-sign-in trigger, then e2e:
+
+Build error: `lib/cart.ts` → `lib/shop.ts` → `supabase/server` leaks into the client bundle. Splitting the pure pricing module out:
+
+
+[LOG_ENTRY type=PROMPT num=44 session=ses_f01d]
+timestamp: 2026-10-03T14:21:47.405Z
+model: opencode/mimo-v2.6-flash-free
+
+(no text content in this prompt)
+
+
+[LOG_ENTRY type=RESPONSE num=44 session=ses_f01d]
+timestamp: 2026-10-03T14:22:56.212Z
+model: opencode/mimo-v2.6-flash-free
+
+## Objective
+- Execute the VENDRA rebuild slice-by-slice per `docs/plans/slice-*.md`, inline with executing-plans (no subagents), owner steering inline. Current session: **Slice 5 (Cart incl. guest cart + merge) = Part 2 (nearly built), Part 3 (category pages), Part 4 (home page)** — commit each part (code/docs/logs separately, no push), 2-3 progress.md lines + 5-line status after each part, continue without waiting unless something failed.
+
+## Important Details
+- Working dir: `C:\Users\Precision 5530\OneDrive\Desktop\Amazon Clone`; branch `main`; Vercel auto-builds on push — **owner says do not push**; 3 unpushed commits from Slice 4 close.
+- **Slice 4 DONE, Part 1 (seed cleanup → 183/22/6/422) DONE** with cited outputs; Slices 0–4 all verified.
+- **Owner rules:** read `docs/progress.md` first (done), `docs/plans/slice-5.md` (done), spec §4 + §7a (done); tests-first; no throwaway probe scripts (real test output = verification); **write ALL migration .sql first, tell owner ONCE to paste in SQL Editor** (done for 0006, owner pasted, verified); e2e run **once after Part 2 and once at end**; kill all node before build, one server at a time; a check failing twice → STOP and report; screenshots only home/category/cart/product × 1280/390 → `docs/evidence/`; report real command results, time per part, biggest time cost at end.
+- **Supabase: no psql/CLI, no DB URL** — owner pastes SQL manually; env keys `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` in `.env.local`.
+- **UI quality bar:** existing tokens only (indigo accent, paper bg, serif display, sans UI), no hard-coded hex; 8px grid; prices heavier than titles, struck list price, accent deal badge; card = square `object-contain` image on white, fixed aspect (CLS <0.1), 1px border, hover lift+shadow, 2-line title clamp, Add-to-cart on card; focus rings, contrast, reduced-motion, layout-matching skeletons, empty/error states with retry, no raw server errors; 1280 & 390px no horizontal scroll, ≥44px tap targets.
+- **Business rules (§4, ADR-004/016):** `effective_price_cents = floor(price*(100-discount)/100)`; free shipping ≥ 3500¢ else 599¢; tax = 8% rounded; ALL money computed server-side (`lib/shop.ts`, `lib/cart.ts` `cartTotals()`); empty cart totals = all zeros (special-cased).
+- **Cart design decisions made:** migration `0006_cart.sql` = `cart_items` (qty check 1–30, `unique(user_id, product_id)`) + `cart_merges` ((user_id, merge_id) PK) + own-row RLS `to authenticated using (user_id = (select auth.uid()))`; idempotent merge = client in-memory `pendingMergeId` (crypto.randomUUID, NOT in localStorage; storage stays pure `[{productId, qty}]` key **`vendra.cart`**) claimed via `cart_merges` upsert `ignoreDuplicates` → double run returns `alreadyMerged: true`, no qty change; release claim (delete marker) if apply fails; merge trigger lives in `CartBadge` signed-in effect (planned but **NOT YET WRITTEN** — see Active); toast = custom events `vendra:toast`/`vendra:cart` with `ToastHost` in root layout; optimistic qty only, money always from server (`hooks/useOptimisticCart.ts`); guest cart POSTs `/api/cart-preview` (server computes lines+totals+dropped); `/checkout` = honest Slice-6 placeholder (200, redirects signed-out via guard) so no dead links; D0 e2e expects `/checkout` → 307 signin — satisfied by `proxy.ts` guard + `redirect("/signin?next=/checkout")` fallback (was about to verify `proxy.ts`).
+- Playwright: `expect(locator).to_be_visible(timeout=5000)`; `channel="msedge"`; with_server pattern `python "C:\Users\Precision 5530\.agents\skills\webapp-testing\scripts\with_server.py" --server "npm run start" --port 3000 --timeout 60 -- cmd /c "npm run e2e"`; kill node after runs.
+- Part 3 specs: header band, sub-category chips w/ counts + `?cat=` URL state, sorts (Top rated default, Price asc/desc, Newest, Biggest discount — **NO Best sellers**; note in progress.md that real Best sellers from order_items = post-Slice-6 task), filters brand/price/rating/deals-only reusing Slice 3 components with group fixed, Top rated rail of 8 (page 1, no filters), 24/page, Deal badge %, unknown group branded not-found.
+- Part 4 specs: typographic hero (warm paper, serif headline, one Browse button, "No surprises" promise), trust strip from real constants (3500¢ free ship, total before checkout, cancel before ships), category tiles w/ real counts, rails Top rated / Deals / per-group (8 + See all), horizontal scroll on phones, footer links to existing pages only, lazy below-fold images, **report `/` HTML size in KB**, no fake counts.
+- `ProductCardData` now includes `id: string` + `stock: number` (populated in `lib/shop.ts` 3 sites + `lib/search.ts` applyFilters).
+- Server actions must run `revalidatePath("/", "layout")` after ok mutations so header badge (server count) updates; `AddToCartButton` also calls `router.refresh()`.
+- Products PK = uuid, `stock int default 50`; test products picked with `.gte("stock", 30)` where qty-cap logic tested.
+- `vitest.config.ts` alias `"@"` → repo root; test include `tests/**/*.test.{ts,tsx}`.
+
+## Work State
+### Completed
+- **Slices 0–4** all DONE with cited commands (Slice 4: typecheck 0, tests 40/40→now 67/67, e2e 47/47).
+- **Part 1 (seed cleanup)** DONE, commits `d00112f`, `ee1e7f1`, `a14cab3`; seed 183 products/22 categories/6 groups/422 images.
+- **Part 2 migration + verification DONE:** wrote `supabase/migrations/0006_cart.sql` (cart_items + cart_merges + RLS + index); notified owner once; owner pasted ("done"); verified via **`tests/cart_rls.test.ts` → 8/8 passed** (own-row insert/select, cross-user update/delete blocked, qty check 0/31, UNIQUE dup, cart_merges RLS + dup + cross-user delete blocked, cascade cleanup).
+- **Part 2 code written:** `lib/shop.ts` (+`FREE_SHIPPING_CENTS`, `ProductCardData.id/stock`, 3 query sites updated), `lib/search.ts` (+id/stock), `lib/cart.ts` (MAX_CART_QTY=30, MAX_GUEST_LINES=100, parseGuestCart, cartTotals, getCartLines, getCartCount, previewLines, addLine, setLineQty, mergeGuest idempotent, CartLine.lineTotalCents), `lib/guestCart.ts` (vendra.cart key, pendingMergeId in memory, defensive read), `lib/toast.ts`, `app/(shop)/cart/actions.ts` (addToCartAction/setQtyAction/mergeGuestCartAction, AUTH checks, revalidatePath), `app/api/cart-preview/route.ts`, `components/shop/{ToastHost,CartBadge(merged into layout/Header),AddToCartButton,CartSummary,CartLineRow,CartClient,GuestCart}.tsx`, `app/(shop)/cart/{page.tsx,loading.tsx}`, `app/(shop)/checkout/page.tsx` (Slice-6 placeholder), `hooks/useOptimisticCart.ts`; Header rewritten (UserSlot streams sign-in/account + CartBadge with server count via `getCartCount`), `app/layout.tsx` mounts `<ToastHost />`; ProductCard restructured (Link wraps media/info, compact Add button, `-X%` deal badge), ProductGrid + signedIn; wired `signedIn`/`getUser` into PDP (BuyBox now takes productId+signedIn, "Buy now" Link → `/checkout` or `/signin?next=/checkout`), search, category, home pages.
+- **Tests:** `tests/cart_core.test.ts` (parse/clamp/totals pure), `tests/cart_merge.test.ts` (live merge double-run `alreadyMerged`, add-once cap 30, STOCK reject w/ available=3, soft-cap at stock, merge cap at low stock, setLineQty 0 removes, restore stock). Fixed regex typo `/\r?\n)/` → `/\r?\n/` in cart_merge line 8.
+- **Full suite verified:** `npm run typecheck` exit=0; `npx vitest run` → **67/67 passed** (8 files).
+
+### Active
+- **Part 2 remaining:** (1) **CartBadge merge-on-sign-in effect NOT yet written** — need `useEffect` in `components/layout/CartBadge.tsx`: if `signedIn` and `readGuestCart().length > 0` → `mergeGuestCartAction(items, getPendingMergeId())` → on ok `clearGuestCart()` + `router.refresh()` (idempotent via in-memory mergeId). (2) Verify `proxy.ts` guards `/checkout` (307 for signed-out) so e2e D0 still passes. (3) Append Phase F (cart e2e) + mobile/no-scroll to `e2e/matrix.py` — plan drafted: F1 guest PDP add → toast "View cart" link + badge `Cart, 1 items`; F2 guest cart line + stepper → qty 2 + Order summary present; F4 Checkout link → `/signin?next=%2Fcheckout` + hidden `next` input `=/checkout` (do BEFORE remove since empty cart hides Checkout); F3 Remove → "Your cart is empty"; F5 fresh user: guest add → signin → merge shows line + `localStorage.getItem('vendra.cart')` in (None,"[]"); F6 signed-in add 2nd product → badge `Cart, 2 items`, persists across reload, increase qty → reload → qty 2 persists, screenshots `05-cart.png`; F7 (in F) mobile 390 cart no horizontal scroll (`document.documentElement.scrollWidth <= 391`) + `05-cart-mobile.png`; sign out + delete user in cleanup; helper `open_instock_pdp(page, hrefs)` loops up to 6 hrefs for enabled Add-to-cart button. (4) Kill node → clean build → run e2e ONCE via with_server. (5) Commits (code/docs/logs) + progress.md Part 2 notes + 5-line status.
+
+### Blocked
+- (none) — migration paste resolved and verified.
+
+## Next Move
+1. Write the CartBadge signed-in merge effect (imports `mergeGuestCartAction`, `readGuestCart`, `getPendingMergeId`, `clearGuestCart`, `useRouter`); read `proxy.ts` to confirm `/checkout` guard behavior; then append Phase F cart checks to `e2e/matrix.py` per the drafted plan.
+2. Typecheck + tests, kill all node, clean build, run e2e ONCE (expect existing 47 checks + new F checks green, D0 `/checkout` still 307); fix max twice then stop-and-report; commit code/docs/logs + progress.md Part 2 + 5-line status; then Part 3 (category page) → Part 4 (home) → final e2e + 8 screenshots (home/category/cart/product × 1280/390) + final report (real results, time per part, biggest cost). Do not push.
+
+## Relevant Files
+- `components/layout/CartBadge.tsx`: needs the merge-on-sign-in effect (only missing Part-2 piece of core logic).
+- `proxy.ts`: verify `/checkout` (and `/orders`,`/account`,`/reviews`) signed-out guard → 307 (e2e D0).
+- `e2e/matrix.py`: 47 checks, Phases A–E; append Phase F (cart) per drafted plan.
+- `supabase/migrations/0006_cart.sql`: written + pasted + verified (8/8).
+- `lib/cart.ts`, `lib/guestCart.ts`, `lib/toast.ts`: cart core / guest storage / toast bus.
+- `app/(shop)/cart/actions.ts`, `app/api/cart-preview/route.ts`: server actions + guest preview endpoint.
+- `app/(shop)/cart/page.tsx`, `app/(shop)/checkout/page.tsx`: cart page + Slice-6 placeholder.
+- `components/shop/{CartClient,GuestCart,CartLineRow,CartSummary,AddToCartButton,ToastHost,ProductCard,ProductGrid,BuyBox}.tsx`.
+- `hooks/useOptimisticCart.ts`: optimistic qty-only reducer with rollback + toasts.
+- `tests/{cart_rls,cart_core,cart_merge}.test.ts`: 8+?+? passing; run via `npx vitest run` (67 total incl. legacy).
+- `docs/plans/slice-5.md`: source of truth for remaining Part 2/3/4 tasks (Task 5 merge, category/home specs).
+- `components/layout/Header.tsx`: UserSlot streams `getCartCount` + CartBadge; `app/layout.tsx` mounts ToastHost.
+- `docs/progress.md`, `docs/evidence/`: update per part; screenshots `05-cart.png`, `05-cart-mobile.png` (plus final 8).
+- `data/seed-products.json`, `scripts/{seed,verify-seed,fetch-seed}.ts`: Part 1 done (183/22/6/422).
+
+
+[LOG_ENTRY type=PROMPT num=45 session=ses_f01d]
+timestamp: 2026-10-03T14:22:56.229Z
+model: opencode/mimo-v2.6-flash-free
+
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.

@@ -33,13 +33,14 @@ export function Header() {
           placeholder="Search products"
           type="search"
         />
-        <Link
-          aria-label="Cart"
-          className="shrink-0 rounded-full p-2 text-ink hover:bg-paper focus:outline-2 focus:outline-accent"
-          href="/cart"
+        {/* Not a link until Slice 5 ships /cart — links only to existing pages */}
+        <span
+          aria-disabled="true"
+          className="shrink-0 rounded-full p-2 text-ink-muted"
+          title="Cart arrives in a later slice"
         >
           <CartIcon />
-        </Link>
+        </span>
       </div>
     </header>
   );

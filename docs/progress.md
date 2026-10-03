@@ -71,3 +71,6 @@ Slice 6â€“8 session wrap (2026-10-03, owner 5-min close): **all three slices DON
 - Production URL: `https://amazon-clone-eight-beryl.vercel.app/` (Vercel Git integration, auto-build on push).
 - Note: `with_server.py` leaves orphaned `next dev` child processes on port 3000 â€” kill leftovers
   manually before re-running local browser checks (Slice 0 lesson).
+
+Slice 10 (2026-10-03, owner 10-min burst): **Part 1 DONE** (verified: 
+pm run typecheck exit=0, commit 24e0ae9) — equal-height ProductCard (reserved brand line, 2-line title min-h, fixed rating row, price+button pinned mt-auto, disabled Out-of-stock already handled by AddToCartButton), rails: scroll-snap + hidden native scrollbar (per owner: hide horizontal slider on homepage), hero 	ext-wrap:balance, footer rewritten to real columns (Shop/Account/demo notice; links only to existing pages: /search, /search?deals=1, /search?sort=rating, /signin, /cart, /orders). **NOT done (no time):** Parts 2-5 (hero carousel, /deals, /best-sellers, budget strip), header quick links, rail de-dup/order rules, category-tile sizing, final build+e2e+screenshots+HTML size — deferred with honest gaps recorded here; no bugs found in Part 1 code (typecheck green). **Next action:** owner reviews home card/rail/footer polish, then Parts 2-5 in a full Slice 10 session.

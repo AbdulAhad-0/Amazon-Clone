@@ -584,6 +584,185 @@ with sync_playwright() as p:
     check("H10 product page at 390: no horizontal scroll", sw_pdp <= 391, f"scrollWidth={sw_pdp}")
     page.screenshot(path=os.path.join(EV, "08-product-mobile.png"), full_page=True)
 
+    # ---------- Phase I: checkout, orders, reviews (Slices 6-8) ----------
+    page.set_viewport_size({"width": 1280, "height": 900})
+    a_uid, b_uid = "", ""
+    try:
+        # sign in user A (the buyer)
+        a_email = f"e2e-buy-{uuid.uuid4().hex[:8]}@example.com"
+        pw_a = "E2e-Buy-Passw0rd!1"
+        created = admin_rest(
+            "POST",
+            "/auth/v1/admin/users",
+            {"email": a_email, "password": pw_a, "email_confirm": True, "user_metadata": {}},
+        )
+        a_uid = (created.get("user") or created.get("id") or "") if isinstance(created, dict) else ""
+        page.goto(f"{BASE}/signin", wait_until="domcontentloaded")
+        page.wait_for_timeout(500)
+        page.fill("#auth-email", a_email)
+        page.fill("#auth-password", pw_a)
+        page.locator('form button[type="submit"]').click()
+        page.wait_for_function("() => location.pathname === '/'", timeout=15000)
+        expect(page.get_by_role("button", name=re.compile(r"^Hello,")).first).to_be_visible(timeout=5000)
+        check("I1 buyer signed in", True)
+
+        # pick an in-stock product + record stock
+        pdp_i = open_instock_pdp(pdps)
+        check("I2 in-stock product for checkout", bool(pdp_i), pdp_i)
+        slug_i = pdp_i.split("/p/")[1]
+        prod_i = admin_rest("GET", f"/rest/v1/products?slug=eq.{slug_i}&select=id,stock")[0]
+        stock_before = int(prod_i["stock"])
+
+        # add to cart, go to checkout, fill address + demo card
+        page.goto(BASE + pdp_i, wait_until="domcontentloaded")
+        page.wait_for_timeout(600)
+        page.get_by_role("button", name="Add to cart").first.click()
+        expect(page.get_by_label(re.compile(r"^Cart, \d+ items?$")).first).to_be_visible(timeout=8000)
+        page.goto(f"{BASE}/checkout", wait_until="domcontentloaded")
+        page.wait_for_timeout(1000)
+        check("I3 checkout renders address + payment", page.get_by_label("Full name").first.is_visible() and page.locator('input[placeholder="4242 4242 4242 4242"]').is_visible())
+        page.get_by_label("Full name").first.fill("Ada Buyer")
+        page.get_by_label("Phone").first.fill("555-0100")
+        page.get_by_label("Address line 1").first.fill("1 Demo Street")
+        page.get_by_label("City").first.fill("Demo City")
+        page.get_by_label("State").first.fill("CA")
+        page.get_by_label("ZIP").first.fill("90001")
+        page.get_by_label("Country").first.fill("US")
+        page.fill('input[placeholder="4242 4242 4242 4242"]', "4242424242424242")
+        page.fill('input[placeholder="12/28"]', "12/30")
+        page.fill('input[placeholder="123"]', "123")
+        page.screenshot(path=os.path.join(EV, "09-checkout.png"), full_page=True)
+        page.set_viewport_size({"width": 390, "height": 844})
+        sw_chk = page.evaluate("() => document.documentElement.scrollWidth")
+        check("I4 checkout at 390: no horizontal scroll", sw_chk <= 391, f"scrollWidth={sw_chk}")
+        page.screenshot(path=os.path.join(EV, "09-checkout-mobile.png"), full_page=True)
+        page.set_viewport_size({"width": 1280, "height": 900})
+
+        # I5 double-submit pay -> still exactly one order
+        pay_btn = page.locator("button", has_text="Pay $")
+        pay_btn.click(timeout=4000)
+        try:
+            pay_btn.click(force=True, timeout=1200)
+        except Exception:
+            pass  # navigation already started -> second click blocked (client guard)
+        page.wait_for_url(re.compile(r"/orders/[0-9a-f-]{36}"), timeout=25000)
+        order_id = page.url.rstrip("/").split("/")[-1]
+        check("I5 pay redirects to order detail", re.match(r"^[0-9a-f-]{36}$", order_id) is not None, page.url)
+        page.wait_for_timeout(800)
+        order_rows = admin_rest("GET", f"/rest/v1/orders?user_id=eq.{a_uid}&select=id")
+        check("I5b exactly one order after double-click pay", len(order_rows) == 1, len(order_rows))
+        stock_now = int(admin_rest("GET", f"/rest/v1/products?slug=eq.{slug_i}&select=stock")[0]["stock"])
+        check("I5c stock lowered by 1", stock_now == stock_before - 1, f"{stock_before}->{stock_now}")
+
+        # order detail: placed state, timeline, address, screenshots
+        check("I6 order detail shows Placed status", page.get_by_text(re.compile(r"Placed", re.I)).count() >= 1)
+        check("I6b timeline + address sections", page.get_by_label("Timeline").count() == 1 and page.get_by_label("Shipping address").count() == 1)
+        page.screenshot(path=os.path.join(EV, "10-order-detail.png"), full_page=True)
+        page.set_viewport_size({"width": 390, "height": 844})
+        sw_ord = page.evaluate("() => document.documentElement.scrollWidth")
+        check("I6c order detail at 390: no horizontal scroll", sw_ord <= 391, f"scrollWidth={sw_ord}")
+        page.screenshot(path=os.path.join(EV, "10-order-detail-mobile.png"), full_page=True)
+        page.set_viewport_size({"width": 1280, "height": 900})
+
+        # cart emptied after order
+        page.goto(f"{BASE}/cart", wait_until="domcontentloaded")
+        page.wait_for_timeout(1000)
+        check("I7 cart emptied after order", page.get_by_text("Your cart is empty").is_visible())
+
+        # I8 failing card: no order, cart kept
+        pdp_j = None
+        for h in pdps:
+            if h != pdp_i and open_instock_pdp([h]):
+                pdp_j = h
+                break
+        check("I8 second product found", bool(pdp_j), pdp_j)
+        slug_j = pdp_j.split("/p/")[1]
+        prod_j = admin_rest("GET", f"/rest/v1/products?slug=eq.{slug_j}&select=id,stock")[0]
+        page.goto(BASE + pdp_j, wait_until="domcontentloaded")
+        page.wait_for_timeout(500)
+        page.get_by_role("button", name="Add to cart").first.click()
+        expect(page.get_by_label(re.compile(r"^Cart, \d+ items?$")).first).to_be_visible(timeout=8000)
+        page.goto(f"{BASE}/checkout", wait_until="domcontentloaded")
+        page.wait_for_timeout(1000)
+        page.fill('input[placeholder="4242 4242 4242 4242"]', "4000000000000002")
+        page.fill('input[placeholder="12/28"]', "12/30")
+        page.fill('input[placeholder="123"]', "123")
+        page.locator("button", has_text="Pay $").click()
+        expect(page.get_by_text(re.compile(r"declined", re.I)).first).to_be_visible(timeout=15000)
+        check("I8b failing card shows declined error", True)
+        check("I8c stays on /checkout", page.url.startswith(BASE + "/checkout"), page.url)
+        order_rows2 = admin_rest("GET", f"/rest/v1/orders?user_id=eq.{a_uid}&select=id")
+        check("I8d no new order for failing card", len(order_rows2) == 1, len(order_rows2))
+        stock_j = int(admin_rest("GET", f"/rest/v1/products?slug=eq.{slug_j}&select=stock")[0]["stock"])
+        check("I8e stock untouched by failed payment", stock_j == int(prod_j["stock"]), f"{prod_j['stock']}->{stock_j}")
+        page.goto(f"{BASE}/cart", wait_until="domcontentloaded")
+        page.wait_for_timeout(1000)
+        check("I8f cart kept after failed payment", page.get_by_role("button", name="Remove").count() >= 1)
+        page.get_by_role("button", name="Remove").first.click()
+        page.wait_for_timeout(1000)
+
+        # I9 reviews: buyer 201, duplicate 409, non-buyer 403 (signed-in cookies)
+        r1 = ctx.request.post(f"{BASE}/api/reviews", data={"productId": prod_i["id"], "rating": 5, "body": "Solid demo product, arrived fast."})
+        check("I9 buyer review -> 201", r1.status == 201, r1.status)
+        r2 = ctx.request.post(f"{BASE}/api/reviews", data={"productId": prod_i["id"], "rating": 4, "body": "Second attempt."})
+        check("I9b duplicate review -> 409", r2.status == 409, r2.status)
+        r3 = ctx.request.post(f"{BASE}/api/reviews", data={"productId": prod_j["id"], "rating": 5, "body": "Never bought this one."})
+        check("I9c non-buyer review -> 403", r3.status == 403, r3.status)
+
+        # PDP reviews section + screenshots
+        page.goto(BASE + pdp_i, wait_until="domcontentloaded")
+        page.wait_for_timeout(900)
+        check("I9d reviews section + verified badge on PDP", page.get_by_label("Reviews").count() == 1 and page.get_by_text("Verified purchase").count() >= 1)
+        check("I9e real count shown (1 review), no fake seed count", page.get_by_text(re.compile(r"\b1 review\b")).count() >= 1 and page.get_by_text(re.compile(r"\b\d{2,} reviews\b")).count() == 0)
+        page.screenshot(path=os.path.join(EV, "11-reviews.png"), full_page=True)
+        page.set_viewport_size({"width": 390, "height": 844})
+        sw_rev = page.evaluate("() => document.documentElement.scrollWidth")
+        check("I9f reviews at 390: no horizontal scroll", sw_rev <= 391, f"scrollWidth={sw_rev}")
+        page.screenshot(path=os.path.join(EV, "11-reviews-mobile.png"), full_page=True)
+        page.set_viewport_size({"width": 1280, "height": 900})
+
+        # I10 cancel: restores stock, second cancel no-op (button gone)
+        page.goto(f"{BASE}/orders/{order_id}", wait_until="domcontentloaded")
+        page.wait_for_timeout(800)
+        page.get_by_role("button", name="Cancel order").click()
+        page.get_by_role("button", name="Yes, cancel it").click()
+        expect(page.get_by_text(re.compile(r"Cancelled", re.I)).first).to_be_visible(timeout=15000)
+        check("I10 cancel marks order Cancelled", True)
+        stock_restored = int(admin_rest("GET", f"/rest/v1/products?slug=eq.{slug_i}&select=stock")[0]["stock"])
+        check("I10b stock restored after cancel", stock_restored == stock_before, f"{stock_now}->{stock_restored}")
+        check("I10c second cancel impossible (button gone)", page.get_by_role("button", name="Cancel order").count() == 0)
+        page.reload(wait_until="domcontentloaded")
+        page.wait_for_timeout(600)
+        check("I10d still no cancel button after reload", page.get_by_role("button", name="Cancel order").count() == 0)
+
+        # I11 user B cannot open user A's order
+        b_email = f"e2e-other-{uuid.uuid4().hex[:8]}@example.com"
+        created_b = admin_rest(
+            "POST",
+            "/auth/v1/admin/users",
+            {"email": b_email, "password": pw_a, "email_confirm": True, "user_metadata": {}},
+        )
+        b_uid = (created_b.get("user") or created_b.get("id") or "") if isinstance(created_b, dict) else ""
+        page.goto(f"{BASE}/signin", wait_until="domcontentloaded")
+        page.wait_for_timeout(500)
+        page.fill("#auth-email", b_email)
+        page.fill("#auth-password", pw_a)
+        page.locator('form button[type="submit"]').click()
+        page.wait_for_function("() => location.pathname === '/'", timeout=15000)
+        resp_b = page.goto(f"{BASE}/orders/{order_id}", wait_until="domcontentloaded")
+        check("I11 user B gets 404 on user A's order", resp_b.status == 404, resp_b.status)
+    finally:
+        for uid in (a_uid, b_uid):
+            if uid:
+                try:
+                    admin_rest("DELETE", f"/rest/v1/reviews?user_id=eq.{uid}")
+                except Exception:
+                    pass
+                try:
+                    admin_rest("DELETE", f"/auth/v1/admin/users/{uid}")
+                except Exception:
+                    pass
+
     browser.close()
 
 fails = [r for r in results if r[0] == "FAIL"]

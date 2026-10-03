@@ -59,6 +59,7 @@ type CardRow = {
   discount_pct: number;
   rating_avg: number;
   rating_count: number;
+  seed_rating_count: number | null;
   stock: number;
   product_images: { url: string; position: number }[] | null;
 };
@@ -72,7 +73,7 @@ function toCardData(p: CardRow): ProductCardData {
     priceCents: p.price_cents,
     discountPct: p.discount_pct,
     ratingAvg: Number(p.rating_avg),
-    ratingCount: p.rating_count,
+    ratingCount: p.rating_count - (p.seed_rating_count ?? 0),
     stock: p.stock,
     image: firstImage(p.product_images),
   };
@@ -95,7 +96,7 @@ export async function getHomeData(): Promise<HomeData> {
 
   const topRes = await supabase
     .from("products")
-    .select("id, slug, title, brand, price_cents, discount_pct, rating_avg, rating_count, stock, product_images(url, position)")
+    .select("id, slug, title, brand, price_cents, discount_pct, rating_avg, rating_count, seed_rating_count, stock, product_images(url, position)")
     .order("rating_avg", { ascending: false })
     .order("slug", { ascending: true })
     .limit(8);
@@ -103,7 +104,7 @@ export async function getHomeData(): Promise<HomeData> {
 
   const dealsRes = await supabase
     .from("products")
-    .select("id, slug, title, brand, price_cents, discount_pct, rating_avg, rating_count, stock, product_images(url, position)")
+    .select("id, slug, title, brand, price_cents, discount_pct, rating_avg, rating_count, seed_rating_count, stock, product_images(url, position)")
     .gt("discount_pct", 0)
     .order("discount_pct", { ascending: false })
     .order("slug", { ascending: true })
@@ -115,7 +116,7 @@ export async function getHomeData(): Promise<HomeData> {
   const membersRes = await supabase
     .from("products")
     .select(
-      "id, slug, title, brand, price_cents, discount_pct, rating_avg, rating_count, stock, categories!inner(nav_group_id), product_images(url, position)",
+      "id, slug, title, brand, price_cents, discount_pct, rating_avg, rating_count, seed_rating_count, stock, categories!inner(nav_group_id), product_images(url, position)",
     );
   if (membersRes.error) throw new Error(`group members: ${membersRes.error.message}`);
 
@@ -219,7 +220,7 @@ export async function getCategoryPage(slug: string, page: number): Promise<Categ
   const listRes = await supabase
     .from("products")
     .select(
-      "id, slug, title, brand, price_cents, discount_pct, rating_avg, rating_count, stock, categories!inner(nav_group_id), product_images(url, position)",
+      "id, slug, title, brand, price_cents, discount_pct, rating_avg, rating_count, seed_rating_count, stock, categories!inner(nav_group_id), product_images(url, position)",
     )
     .eq("categories.nav_group_id", group.id)
     .order("rating_avg", { ascending: false })
@@ -236,6 +237,7 @@ export async function getCategoryPage(slug: string, page: number): Promise<Categ
     discount_pct: number;
     rating_avg: number;
     rating_count: number;
+  seed_rating_count: number | null;
     stock: number;
     product_images: { url: string; position: number }[] | null;
   };
@@ -247,7 +249,7 @@ export async function getCategoryPage(slug: string, page: number): Promise<Categ
     priceCents: p.price_cents,
     discountPct: p.discount_pct,
     ratingAvg: Number(p.rating_avg),
-    ratingCount: p.rating_count,
+    ratingCount: p.rating_count - (p.seed_rating_count ?? 0),
     stock: p.stock,
     image: firstImage(p.product_images),
   }));
@@ -324,7 +326,7 @@ export async function getTopRatedRail(navGroupId: string): Promise<ProductCardDa
   const res = await supabase
     .from("products")
     .select(
-      "id, slug, title, brand, price_cents, discount_pct, rating_avg, rating_count, stock, categories!inner(nav_group_id), product_images(url, position)",
+      "id, slug, title, brand, price_cents, discount_pct, rating_avg, rating_count, seed_rating_count, stock, categories!inner(nav_group_id), product_images(url, position)",
     )
     .eq("categories.nav_group_id", navGroupId)
     .order("rating_avg", { ascending: false })
@@ -341,6 +343,7 @@ export async function getTopRatedRail(navGroupId: string): Promise<ProductCardDa
     discount_pct: number;
     rating_avg: number;
     rating_count: number;
+  seed_rating_count: number | null;
     stock: number;
     product_images: { url: string; position: number }[] | null;
   };
@@ -352,7 +355,7 @@ export async function getTopRatedRail(navGroupId: string): Promise<ProductCardDa
     priceCents: p.price_cents,
     discountPct: p.discount_pct,
     ratingAvg: Number(p.rating_avg),
-    ratingCount: p.rating_count,
+    ratingCount: p.rating_count - (p.seed_rating_count ?? 0),
     stock: p.stock,
     image: firstImage(p.product_images),
   }));
@@ -384,7 +387,7 @@ export async function getProductDetail(slug: string): Promise<ProductDetailData 
   const res = await supabase
     .from("products")
     .select(
-      "id, slug, title, description, brand, price_cents, discount_pct, stock, rating_avg, rating_count, categories!inner(name, nav_group_id, nav_groups!inner(slug, name)), product_images(url, position)",
+      "id, slug, title, description, brand, price_cents, discount_pct, stock, rating_avg, rating_count, seed_rating_count, categories!inner(name, nav_group_id, nav_groups!inner(slug, name)), product_images(url, position)",
     )
     .eq("slug", slug)
     .maybeSingle();
@@ -402,6 +405,7 @@ export async function getProductDetail(slug: string): Promise<ProductDetailData 
     stock: number;
     rating_avg: number;
     rating_count: number;
+  seed_rating_count: number | null;
     categories: { name: string; nav_group_id: string; nav_groups: { slug: string; name: string } };
     product_images: { url: string; position: number }[] | null;
   };
@@ -413,7 +417,7 @@ export async function getProductDetail(slug: string): Promise<ProductDetailData 
   const relRes = await supabase
     .from("products")
     .select(
-      "id, slug, title, brand, price_cents, discount_pct, rating_avg, rating_count, stock, categories!inner(nav_group_id), product_images(url, position)",
+      "id, slug, title, brand, price_cents, discount_pct, rating_avg, rating_count, seed_rating_count, stock, categories!inner(nav_group_id), product_images(url, position)",
     )
     .eq("categories.nav_group_id", p.categories.nav_group_id)
     .neq("slug", p.slug)
@@ -431,6 +435,7 @@ export async function getProductDetail(slug: string): Promise<ProductDetailData 
     discount_pct: number;
     rating_avg: number;
     rating_count: number;
+  seed_rating_count: number | null;
     stock: number;
     product_images: { url: string; position: number }[] | null;
   };
@@ -442,7 +447,7 @@ export async function getProductDetail(slug: string): Promise<ProductDetailData 
     priceCents: r.price_cents,
     discountPct: r.discount_pct,
     ratingAvg: Number(r.rating_avg),
-    ratingCount: r.rating_count,
+    ratingCount: r.rating_count - (r.seed_rating_count ?? 0),
     stock: r.stock,
     image: firstImage(r.product_images),
   }));
@@ -457,7 +462,7 @@ export async function getProductDetail(slug: string): Promise<ProductDetailData 
     discountPct: p.discount_pct,
     stock: p.stock,
     ratingAvg: Number(p.rating_avg),
-    ratingCount: p.rating_count,
+    ratingCount: p.rating_count - (p.seed_rating_count ?? 0),
     categoryName: p.categories.name,
     navGroupSlug: p.categories.nav_groups.slug,
     navGroupName: p.categories.nav_groups.name,

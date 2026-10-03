@@ -5,7 +5,12 @@ import { BuyBox } from "@/components/shop/BuyBox";
 import { Gallery } from "@/components/shop/Gallery";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { RatingStars } from "@/components/shop/RatingStars";
+import { RatingSummary } from "@/components/reviews/RatingSummary";
+import { ReviewList } from "@/components/reviews/ReviewList";
+import { WriteReviewForm } from "@/components/reviews/WriteReviewForm";
+import { canReview, getReviews, hasReviewed } from "@/lib/reviews";
 import { getProductDetail } from "@/lib/shop";
+import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/getUser";
 
 interface ProductPageProps {
@@ -85,6 +90,44 @@ export default async function ProductPage({ params, searchParams }: ProductPageP
           </div>
         </section>
       )}
+
+      <ReviewsSection avg={detail.ratingAvg} productId={detail.id} signedIn={user !== null} slug={detail.slug} userId={user?.id ?? null} />
     </div>
+  );
+}
+
+async function ReviewsSection({
+  avg,
+  productId,
+  signedIn,
+  slug,
+  userId,
+}: {
+  avg: number;
+  productId: string;
+  signedIn: boolean;
+  slug: string;
+  userId: string | null;
+}) {
+  const supabase = await createClient();
+  const reviews = await getReviews(supabase, productId);
+
+  let eligibility: "eligible" | "signed_out" | "ineligible" | "already" = "signed_out";
+  if (signedIn && userId) {
+    const already = await hasReviewed(supabase, userId, productId);
+    eligibility = already ? "already" : (await canReview(supabase, userId, productId)) ? "eligible" : "ineligible";
+  }
+
+  return (
+    <section aria-label="Reviews" className="mt-12">
+      <h2 className="mb-4 font-display text-xl font-semibold text-ink">Ratings &amp; reviews</h2>
+      <div className="grid gap-6 lg:grid-cols-[20rem_1fr]">
+        <div className="space-y-4">
+          <RatingSummary avg={avg} realCount={reviews.length} reviews={reviews} />
+          <WriteReviewForm productId={productId} slug={slug} eligibility={eligibility} />
+        </div>
+        <ReviewList currentUserId={userId} reviews={reviews} />
+      </div>
+    </section>
   );
 }

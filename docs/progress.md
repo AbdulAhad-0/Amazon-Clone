@@ -8,7 +8,7 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `DONE (verified: <
 | # | Slice | Status | Started | Verified by |
 |---|---|---|---|---|
 | 0 | Foundation | **DONE (verified:** node poll → `noindex:true robots:true vendra:true` on `https://amazon-clone-eight-beryl.vercel.app/`; Playwright → meta `noindex, nofollow`, robots `User-Agent: * / Disallow: /`, paper/indigo demo notice; evidence `docs/evidence/00-deploy*.png` + `00-deploy-checks.txt`**)** | 2026-10-03 | 2026-10-03 |
-| 1 | Seeded catalogue | NOT STARTED | — | — |
+| 1 | Seeded catalogue | **DONE (verified:** `npm run seed` ×2 + `npm run verify-seed` → counts `nav_groups=9 categories=24 products=194 images=474`, min/max ids identical across runs (`00709f6d-…`/`ff77cd24-…`), `seed_rating_gt0=194 with_images=194`, `price_fn 500`; owner applied migrations 0001–0004 in SQL Editor, each verified (`anon write DENIED 42501`); `verify-public-read` → 3 titles anon; app+components SERVICE_ROLE **NO MATCHES**; footer links Home-only; typecheck exit=0, `npm test` 1/1**)** | 2026-10-03 | 2026-10-03 |
 | 2 | Browse + PDP | NOT STARTED | — | — |
 | 3 | Search, filters, sort | NOT STARTED | — | — |
 | 4 | Auth + RLS | NOT STARTED | — | — |
@@ -32,6 +32,8 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `DONE (verified: <
 | `docs/plans/slice-0..8.md`, `slice-10.md` | DONE (awaiting owner review) |
 
 Evidence convention: screenshots + verification output land in **`docs/evidence/`** (ADR-020).
+
+Slice 1 notes: `rating_avg/count = seed baseline + real reviews (trigger, Slice 8)`; integration tests **SKIPPED** — separate `TEST_SUPABASE_*` project not confirmed by owner (ADR-020), recorded here per instruction.
 
 ## Open items
 

@@ -28,6 +28,7 @@ Context: brief said 500–2000; owner prefers quality over quantity. Verified 20
 DummyJSON **once** via `scripts/fetch-seed.ts` into committed `data/seed-products.json`; collapse the
 24 categories into **8–10 nav groups**; no duplicated products. Consequence: brief's 500–2000 count
 deliberately **not** met — owner-approved trade-off (quality, real photos).
+*(Seed counts superseded by ADR-021: seed = 184 products / 22 categories / 7 nav groups.)*
 
 ### ADR-006 · Images hotlink CDN now, Storage later — Accepted
 Context: owner's 10 MB download cap; 500–800 image files would exceed it; photo licence unclear
@@ -138,3 +139,23 @@ PowerShell (`Select-String`, `Invoke-WebRequest`) or small Node scripts; screens
 output go to **`docs/evidence/`** (never `.agent-logs/`); Vitest integration tests run against a
 **separate Supabase test project** (`TEST_SUPABASE_*` env names only). Consequence: evidence is
 repo-visible and reviewable; a failed test can't wipe the demo catalogue.
+
+### ADR-021 · Exclude vehicle + motorcycle; seed = 184 products / 22 categories / 7 nav groups — Accepted
+Context: owner decision, Slice 1 follow-up (2026-10-03): drop the `vehicle` and `motorcycle`
+categories from the seed (out of scope for the demo storefront). Live re-verification same day
+(not memory): DummyJSON has 24 categories summing to exactly 194 products; `vehicle=5`,
+`motorcycle=5` → 10 products removed. Decision: seed = **184 products / 22 categories / 7 nav
+groups** — `toys` dropped (never had a source category) and `pets-automotive` dropped (it held
+only the two excluded categories), so **every nav group has ≥1 product** and Home can only ever
+render groups with products. `scripts/fetch-seed.ts` pins source `194/24` **and** seed `184/22`,
+asserts the exclusion list against live data; `scripts/seed.ts` upserts, then **deletes** rows
+absent from the seed (products → categories → nav_groups, FK order; safe — no orders exist yet);
+`scripts/verify-seed.ts` expects `184/22/7`. **Supersedes the 194-products seed figure in
+ADR-005** (ADR-005's source/delivery choices stand). **`seed_rating_count` is NOT a real rating
+count from the source**: it is the length of DummyJSON's `reviews` array — exactly **3 for every
+product** (verified live: distribution `{"3":194}`); only `rating` (`seed_rating_avg`) comes from
+the source, and DummyJSON computes it over those same 3 shown reviews. No review bodies,
+reviewer names or reviewer emails are stored (array length only); `data/seed-products.json`
+scanned: 0 email matches, 0 reviewer/reviews keys. Consequence: any doc still saying "194"
+refers to the source total, not the seed; ratings roll up from this baseline + real reviews
+(Slice 8 trigger).

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactElement } from "react";
+import { SearchSuggest } from "./SearchSuggest";
 
 function CartIcon(): ReactElement {
   return (
@@ -27,12 +28,7 @@ export function Header() {
           </span>
           <span aria-hidden="true" className="mt-0.5 block h-0.5 w-full bg-accent" />
         </Link>
-        <input
-          aria-label="Search products"
-          className="min-w-0 flex-1 rounded-full border border-line bg-paper px-4 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-2 focus:outline-accent"
-          placeholder="Search products"
-          type="search"
-        />
+        <SearchSuggest />
         {/* Not a link until Slice 5 ships /cart — links only to existing pages */}
         <span
           aria-disabled="true"

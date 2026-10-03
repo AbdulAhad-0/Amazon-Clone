@@ -2,15 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { cartTotals, getCartLines } from "@/lib/cart";
-import { formatCents } from "@/lib/money";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/getUser";
+import { CheckoutClient } from "@/components/checkout/CheckoutClient";
+import { OrderSummary } from "@/components/checkout/OrderSummary";
+import type { ShipAddress } from "@/app/(shop)/checkout/actions";
 
 export const metadata: Metadata = { title: "Checkout · Vendra" };
 
-// Placeholder until Slice 6 ships the real checkout. It exists so the
-// sign-in round trip (/signin?next=/checkout) lands somewhere real with the
-// cart intact — no fake payment, no dead link.
 export default async function CheckoutPage() {
   const user = await getUser();
   if (!user) redirect("/signin?next=/checkout");
@@ -19,6 +18,26 @@ export default async function CheckoutPage() {
   const lines = await getCartLines(supabase);
   const totals = cartTotals(lines);
   const itemCount = lines.reduce((sum, l) => sum + l.qty, 0);
+
+  const saved = await supabase
+    .from("addresses")
+    .select("full_name, phone, line1, line2, city, state, zip, country")
+    .order("is_default", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const initial: ShipAddress | null = saved.data
+    ? {
+        fullName: saved.data.full_name,
+        phone: saved.data.phone,
+        line1: saved.data.line1,
+        line2: saved.data.line2 ?? "",
+        city: saved.data.city,
+        state: saved.data.state,
+        zip: saved.data.zip,
+        country: saved.data.country,
+      }
+    : null;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
@@ -48,48 +67,8 @@ export default async function CheckoutPage() {
         </div>
       ) : (
         <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
-          <div className="rounded-2xl border border-line bg-paper p-6">
-            <p className="text-ink">
-              <span className="font-semibold">
-                {itemCount} {itemCount === 1 ? "item" : "items"}
-              </span>{" "}
-              in your cart — total {formatCents(totals.totalCents)}.
-            </p>
-            <p className="mt-3 text-sm text-ink-muted">
-              Payment and delivery arrive in the next slice. Nothing is charged now,
-              and your cart is saved exactly as you left it.
-            </p>
-            <Link
-              className="mt-5 inline-block min-h-11 rounded-full border border-line bg-white px-6 py-3 text-sm font-semibold text-ink hover:border-accent hover:text-accent focus:outline-2 focus:outline-accent"
-              href="/cart"
-            >
-              Back to cart
-            </Link>
-          </div>
-
-          <aside className="rounded-2xl border border-line bg-paper p-5">
-            <h2 className="mb-3 font-display text-lg font-semibold text-ink">Summary</h2>
-            <dl className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <dt className="text-ink-muted">Subtotal</dt>
-                <dd className="text-ink">{formatCents(totals.subtotalCents)}</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-ink-muted">Estimated shipping</dt>
-                <dd className={totals.shippingCents === 0 ? "font-semibold text-green-700" : "text-ink"}>
-                  {totals.shippingCents === 0 ? "FREE" : formatCents(totals.shippingCents)}
-                </dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-ink-muted">Estimated tax (8%)</dt>
-                <dd className="text-ink">{formatCents(totals.taxCents)}</dd>
-              </div>
-              <div className="flex justify-between border-t border-line pt-2 font-semibold">
-                <dt className="text-ink">Total</dt>
-                <dd className="text-ink">{formatCents(totals.totalCents)}</dd>
-              </div>
-            </dl>
-          </aside>
+          <CheckoutClient totalCents={totals.totalCents} initial={initial} />
+          <OrderSummary totals={totals} itemCount={itemCount} />
         </div>
       )}
     </div>

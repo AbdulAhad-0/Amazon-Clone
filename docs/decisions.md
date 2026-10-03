@@ -161,6 +161,12 @@ refers to the source total, not the seed; ratings roll up from this baseline + r
 (Slice 8 trigger). *Follow-up same day: the 5-product `furniture` group was merged into
 `home-kitchen` (category re-parented, group row dropped — no product ids touched) → **6 nav
 groups**, every one with ≥1 product.*
+*Follow-up 2026-10-03 (seed cleanup): the one Amazon-named product (`amazon-echo-plus`, "Amazon
+Echo Plus") was dropped — our own branding must never ship a product called Amazon, and a
+third-party product named after it still looks like a copy. New seed = **183 products / 22
+categories / 6 nav groups / 422 images**; `fetch-seed.ts` now excludes `/amazon/i` in
+title+brand+description and pins 183, `verify-seed.ts` expects 183 — both verified
+(`npm run verify-seed` → `verify-seed: OK`).*
 
 ### ADR-022 · Rating display = average stars only until real reviews exist — Accepted
 Context: `seed_rating_count` is not a real count — it is the length of DummyJSON's `reviews`

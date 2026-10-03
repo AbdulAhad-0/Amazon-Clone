@@ -41,6 +41,8 @@ Slice 3 notes (2026-10-03): filters are URL-driven through one `buildSearchUrl` 
 
 Slice 4 notes (2026-10-03): `profiles` + trigger + own-row RLS applied (0005); email confirmation OFF (ADR-007); `server-only` package added; Orders/Account are disabled non-links until Slices 7+. **D8 fix (confirmed real bug):** stale header was the client router cache — `revalidatePath` alone can't clear it; sign-out button now calls the action, then `router.refresh()` + `router.replace("/")` (option 1, verified working; hard-nav fallback not needed). Header session read moved out of the root layout into a request-time `UserSlot` behind `<Suspense>` per Next.js auth-with-cacheComponents docs — server side always dynamic, never prerendered. Sign-in/sign-up freshness covered by new auto-waiting e2e checks D3b/D10b (5 s `expect(...).to_be_visible`). e2e now 47 checks. **Next action:** owner reviews auth/sign-out UX (screenshots `docs/evidence/04-*.png`), then start Slice 5 (Cart).
 
+Slice 5 session — Part 1 notes (2026-10-03): seed cleanup — the one Amazon-named product (`amazon-echo-plus`) removed from `data/seed-products.json`; `npm run seed` → `deleted products=1`, `categories=22 products=183 images=422`; `npm run verify-seed` → `verify-seed: OK` (expectations 184→183, `fetch-seed.ts` now excludes `/amazon/i`); ADR-021 gained the follow-up line. **Next action:** Part 2 — Slice 5 cart (guest + merge, RLS, /cart page).
+
 ## Open items
 
 - **OPEN QUESTION** pain points: ~~owner to add own entries to `spec.md` §7.1~~ — owner's pain points

@@ -219,7 +219,10 @@ export async function applyFilters(qb: SupabaseClient, raw: SearchParams): Promi
   if (p.minCents !== undefined) query = query.gte("price_cents", p.minCents);
   if (p.maxCents !== undefined) query = query.lte("price_cents", p.maxCents);
   if (p.rating !== undefined) query = query.gte("rating_avg", p.rating);
-  if (p.deals === true) query = query.gt("discount_pct", 0);
+  if (p.deals === true) {
+    // Slice 10 /deals: discount > 0 AND in stock (spec).
+    query = query.gt("discount_pct", 0).gt("stock", 0);
+  }
   if (p.q !== undefined) query = query.or(buildQOrClause(p.q));
   for (const o of ORDERS[p.sort]) query = query.order(o.col, { ascending: o.asc });
   const from = (p.page - 1) * SEARCH_PAGE_SIZE;

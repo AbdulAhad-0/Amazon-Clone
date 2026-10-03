@@ -180,3 +180,5 @@ rollup, ADR-018), and then it shows **only the real number** of those reviews â€
 starts at **0**; `npm run seed` resets untouched baselines and `verify-seed` asserts
 `rating_count_zero=184`. Consequence: count-gated UI ("Popular right now", any
 "N reviews" label) reads the live columns and simply stays hidden until Slice 8 fills them.
+
+- **ADR-023 (Slice 10): No "New Releases" page** — every seed product shares one created_at, so a "newest" ranking would be fake; /best-sellers ranks real units sold instead (with a top-rated fallback below MIN_SALES_FOR_RANKING = 10 units).

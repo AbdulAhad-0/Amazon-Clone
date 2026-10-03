@@ -111,7 +111,8 @@ async function main() {
             fresh.map((p) => ({
               ...base(p),
               rating_avg: p.seedRatingAvg,
-              rating_count: p.seedRatingCount,
+              // ADR-022: rating_count = real reviews only, never the seed's 3
+              rating_count: 0,
             })),
             { onConflict: "slug" },
           )
@@ -125,6 +126,27 @@ async function main() {
       "products upsert (existing; rating_* untouched)",
     );
   }
+
+  // ADR-022: rows still carrying the untouched seed baseline (count == seed_count
+  // and avg == seed_avg) get rating_count reset to 0 — real reviews only.
+  const preState = await db
+    .from("products")
+    .select("id,rating_count,seed_rating_count,rating_avg,seed_rating_avg");
+  check(preState.error, "products select (rating reset)");
+  const resetIds = (preState.data ?? [])
+    .filter(
+      (r) =>
+        Number(r.rating_count) > 0 &&
+        Number(r.rating_count) === Number(r.seed_rating_count) &&
+        Number(r.rating_avg) === Number(r.seed_rating_avg),
+    )
+    .map((r) => r.id as string);
+  if (resetIds.length > 0)
+    check(
+      (await db.from("products").update({ rating_count: 0 }).in("id", resetIds)).error,
+      "rating_count baseline reset",
+    );
+  console.log(`rating_count reset to 0: ${resetIds.length}`);
 
   const prod = await db.from("products").select("id,slug");
   check(prod.error, "products select (for images)");

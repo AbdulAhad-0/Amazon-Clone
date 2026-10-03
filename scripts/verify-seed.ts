@@ -45,6 +45,13 @@ async function main() {
     .limit(1);
   check(withImages.error, "products with images count");
 
+  const ratingZero = await svc
+    .from("products")
+    .select("id", { count: "exact" })
+    .eq("rating_count", 0)
+    .limit(1);
+  check(ratingZero.error, "rating_count = 0 count");
+
   const nav = await svc.from("nav_groups").select("slug").order("sort_order", { ascending: true });
   check(nav.error, "nav slugs");
 
@@ -58,14 +65,17 @@ async function main() {
     `ids min=${(min.data?.[0]?.id as string) ?? "(none)"} max=${(max.data?.[0]?.id as string) ?? "(none)"}`,
   );
   console.log(
-    `baseline seed_rating_gt0=${baseline.count ?? -1} with_images=${withImages.count ?? -1}`,
+    `baseline seed_rating_gt0=${baseline.count ?? -1} with_images=${withImages.count ?? -1} rating_count_zero=${ratingZero.count ?? -1}`,
   );
   console.log(`nav ${(nav.data ?? []).map((r) => r.slug).join(" ")}`);
   console.log(`price_fn ${fn.data}`);
 
   if (counts.products !== 184) fail(`products=${counts.products}, expected 184 (ADR-021)`);
   if (counts.categories !== 22) fail(`categories=${counts.categories}, expected 22 (ADR-021)`);
-  if (counts.nav_groups !== 7) fail(`nav_groups=${counts.nav_groups}, expected 7 (ADR-021)`);
+  if (counts.nav_groups !== 6)
+    fail(`nav_groups=${counts.nav_groups}, expected 6 (ADR-021 + furniture merge)`);
+  if ((ratingZero.count ?? -1) !== counts.products)
+    fail(`rating_count=0 on ${ratingZero.count} rows, expected all ${counts.products} (ADR-022)`);
   if (counts.product_images < counts.products)
     fail(`images=${counts.product_images}, expected >= products (${counts.products})`);
   if ((baseline.count ?? 0) < 1) fail("no product with seed_rating_count > 0");

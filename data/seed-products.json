@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-10-03T10:15:03.543Z",
+  "fetchedAt": "2026-10-03T10:28:36.692Z",
   "navGroups": [
     {
       "slug": "electronics",
@@ -30,11 +30,6 @@
       "slug": "sports",
       "name": "Sports",
       "sortOrder": 6
-    },
-    {
-      "slug": "furniture",
-      "name": "Furniture",
-      "sortOrder": 7
     }
   ],
   "categories": [
@@ -53,7 +48,7 @@
     {
       "slug": "furniture",
       "name": "Furniture",
-      "navGroupSlug": "furniture",
+      "navGroupSlug": "home-kitchen",
       "sortOrder": 2
     },
     {

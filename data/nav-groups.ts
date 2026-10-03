@@ -5,7 +5,8 @@ export interface NavGroup {
 }
 
 // Only groups that have at least one product (ADR-021): toys never had a
-// source category; pets-automotive lost both vehicle+motorcycle to exclusion.
+// source category; pets-automotive lost both vehicle+motorcycle to exclusion;
+// furniture (5 products) merged into home-kitchen (Slice 2 follow-up) -> 6 groups.
 export const navGroups: NavGroup[] = [
   { slug: "electronics", name: "Electronics", sortOrder: 1 },
   { slug: "home-kitchen", name: "Home & Kitchen", sortOrder: 2 },
@@ -13,7 +14,6 @@ export const navGroups: NavGroup[] = [
   { slug: "beauty", name: "Beauty", sortOrder: 4 },
   { slug: "grocery", name: "Grocery", sortOrder: 5 },
   { slug: "sports", name: "Sports", sortOrder: 6 },
-  { slug: "furniture", name: "Furniture", sortOrder: 7 },
 ];
 
 // Every NON-excluded source category maps to exactly one group; excluded
@@ -46,5 +46,5 @@ export const categoryToNavGroup: Record<string, string> = {
 
   "sports-accessories": "sports",
 
-  furniture: "furniture",
+  furniture: "home-kitchen",
 };

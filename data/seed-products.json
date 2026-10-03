@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-10-03T09:40:43.245Z",
+  "fetchedAt": "2026-10-03T10:15:03.543Z",
   "navGroups": [
     {
       "slug": "electronics",
@@ -32,19 +32,9 @@
       "sortOrder": 6
     },
     {
-      "slug": "toys",
-      "name": "Toys",
-      "sortOrder": 7
-    },
-    {
-      "slug": "pets-automotive",
-      "name": "Pets & Automotive",
-      "sortOrder": 8
-    },
-    {
       "slug": "furniture",
       "name": "Furniture",
-      "sortOrder": 9
+      "sortOrder": 7
     }
   ],
   "categories": [
@@ -115,82 +105,70 @@
       "sortOrder": 10
     },
     {
-      "slug": "motorcycle",
-      "name": "Motorcycle",
-      "navGroupSlug": "pets-automotive",
-      "sortOrder": 11
-    },
-    {
       "slug": "skin-care",
       "name": "Skin Care",
       "navGroupSlug": "beauty",
-      "sortOrder": 12
+      "sortOrder": 11
     },
     {
       "slug": "smartphones",
       "name": "Smartphones",
       "navGroupSlug": "electronics",
-      "sortOrder": 13
+      "sortOrder": 12
     },
     {
       "slug": "sports-accessories",
       "name": "Sports Accessories",
       "navGroupSlug": "sports",
-      "sortOrder": 14
+      "sortOrder": 13
     },
     {
       "slug": "sunglasses",
       "name": "Sunglasses",
       "navGroupSlug": "fashion",
-      "sortOrder": 15
+      "sortOrder": 14
     },
     {
       "slug": "tablets",
       "name": "Tablets",
       "navGroupSlug": "electronics",
-      "sortOrder": 16
+      "sortOrder": 15
     },
     {
       "slug": "tops",
       "name": "Tops",
       "navGroupSlug": "fashion",
-      "sortOrder": 17
-    },
-    {
-      "slug": "vehicle",
-      "name": "Vehicle",
-      "navGroupSlug": "pets-automotive",
-      "sortOrder": 18
+      "sortOrder": 16
     },
     {
       "slug": "womens-bags",
       "name": "Womens Bags",
       "navGroupSlug": "fashion",
-      "sortOrder": 19
+      "sortOrder": 17
     },
     {
       "slug": "womens-dresses",
       "name": "Womens Dresses",
       "navGroupSlug": "fashion",
-      "sortOrder": 20
+      "sortOrder": 18
     },
     {
       "slug": "womens-jewellery",
       "name": "Womens Jewellery",
       "navGroupSlug": "fashion",
-      "sortOrder": 21
+      "sortOrder": 19
     },
     {
       "slug": "womens-shoes",
       "name": "Womens Shoes",
       "navGroupSlug": "fashion",
-      "sortOrder": 22
+      "sortOrder": 20
     },
     {
       "slug": "womens-watches",
       "name": "Womens Watches",
       "navGroupSlug": "fashion",
-      "sortOrder": 23
+      "sortOrder": 21
     }
   ],
   "products": [
@@ -1981,96 +1959,6 @@
       ]
     },
     {
-      "slug": "generic-motorcycle",
-      "title": "Generic Motorcycle",
-      "description": "The Generic Motorcycle is a versatile and reliable bike suitable for various riding preferences. With a balanced design, it provides a comfortable and efficient riding experience.",
-      "brand": "Generic Motors",
-      "categorySlug": "motorcycle",
-      "priceCents": 399999,
-      "discountPct": 12,
-      "seedRatingAvg": 4.91,
-      "seedRatingCount": 3,
-      "stock": 34,
-      "images": [
-        "https://cdn.dummyjson.com/product-images/motorcycle/generic-motorcycle/1.webp",
-        "https://cdn.dummyjson.com/product-images/motorcycle/generic-motorcycle/2.webp",
-        "https://cdn.dummyjson.com/product-images/motorcycle/generic-motorcycle/3.webp",
-        "https://cdn.dummyjson.com/product-images/motorcycle/generic-motorcycle/4.webp"
-      ]
-    },
-    {
-      "slug": "kawasaki-z800",
-      "title": "Kawasaki Z800",
-      "description": "The Kawasaki Z800 is a powerful and agile sportbike known for its striking design and performance. It's equipped with advanced features, making it a favorite among motorcycle enthusiasts.",
-      "brand": "Kawasaki",
-      "categorySlug": "motorcycle",
-      "priceCents": 899999,
-      "discountPct": 10,
-      "seedRatingAvg": 3.98,
-      "seedRatingCount": 3,
-      "stock": 52,
-      "images": [
-        "https://cdn.dummyjson.com/product-images/motorcycle/kawasaki-z800/1.webp",
-        "https://cdn.dummyjson.com/product-images/motorcycle/kawasaki-z800/2.webp",
-        "https://cdn.dummyjson.com/product-images/motorcycle/kawasaki-z800/3.webp",
-        "https://cdn.dummyjson.com/product-images/motorcycle/kawasaki-z800/4.webp"
-      ]
-    },
-    {
-      "slug": "motogp-ci-h1",
-      "title": "MotoGP CI.H1",
-      "description": "The MotoGP CI.H1 is a high-performance motorcycle inspired by MotoGP racing technology. It offers cutting-edge features and precision engineering for an exhilarating riding experience.",
-      "brand": "MotoGP",
-      "categorySlug": "motorcycle",
-      "priceCents": 1499999,
-      "discountPct": 7,
-      "seedRatingAvg": 2.97,
-      "seedRatingCount": 3,
-      "stock": 10,
-      "images": [
-        "https://cdn.dummyjson.com/product-images/motorcycle/motogp-ci.h1/1.webp",
-        "https://cdn.dummyjson.com/product-images/motorcycle/motogp-ci.h1/2.webp",
-        "https://cdn.dummyjson.com/product-images/motorcycle/motogp-ci.h1/3.webp",
-        "https://cdn.dummyjson.com/product-images/motorcycle/motogp-ci.h1/4.webp"
-      ]
-    },
-    {
-      "slug": "scooter-motorcycle",
-      "title": "Scooter Motorcycle",
-      "description": "The Scooter Motorcycle is a practical and fuel-efficient bike ideal for urban commuting. It features a step-through design and user-friendly controls for easy maneuverability.",
-      "brand": "ScootMaster",
-      "categorySlug": "motorcycle",
-      "priceCents": 299999,
-      "discountPct": 6,
-      "seedRatingAvg": 2.53,
-      "seedRatingCount": 3,
-      "stock": 84,
-      "images": [
-        "https://cdn.dummyjson.com/product-images/motorcycle/scooter-motorcycle/1.webp",
-        "https://cdn.dummyjson.com/product-images/motorcycle/scooter-motorcycle/2.webp",
-        "https://cdn.dummyjson.com/product-images/motorcycle/scooter-motorcycle/3.webp",
-        "https://cdn.dummyjson.com/product-images/motorcycle/scooter-motorcycle/4.webp"
-      ]
-    },
-    {
-      "slug": "sportbike-motorcycle",
-      "title": "Sportbike Motorcycle",
-      "description": "The Sportbike Motorcycle is designed for speed and agility, with a sleek and aerodynamic profile. It's suitable for riders looking for a dynamic and thrilling riding experience.",
-      "brand": "SpeedMaster",
-      "categorySlug": "motorcycle",
-      "priceCents": 749999,
-      "discountPct": 12,
-      "seedRatingAvg": 3.94,
-      "seedRatingCount": 3,
-      "stock": 0,
-      "images": [
-        "https://cdn.dummyjson.com/product-images/motorcycle/sportbike-motorcycle/1.webp",
-        "https://cdn.dummyjson.com/product-images/motorcycle/sportbike-motorcycle/2.webp",
-        "https://cdn.dummyjson.com/product-images/motorcycle/sportbike-motorcycle/3.webp",
-        "https://cdn.dummyjson.com/product-images/motorcycle/sportbike-motorcycle/4.webp"
-      ]
-    },
-    {
       "slug": "attitude-super-leaves-hand-soap",
       "title": "Attitude Super Leaves Hand Soap",
       "description": "Attitude Super Leaves Hand Soap is a natural and nourishing hand soap enriched with the goodness of super leaves. It cleanses and moisturizes your hands, leaving them feeling fresh and soft.",
@@ -2881,106 +2769,6 @@
         "https://cdn.dummyjson.com/product-images/tops/tartan-dress/2.webp",
         "https://cdn.dummyjson.com/product-images/tops/tartan-dress/3.webp",
         "https://cdn.dummyjson.com/product-images/tops/tartan-dress/4.webp"
-      ]
-    },
-    {
-      "slug": "300-touring",
-      "title": "300 Touring",
-      "description": "The 300 Touring is a stylish and comfortable sedan, known for its luxurious features and smooth performance.",
-      "brand": "Chrysler",
-      "categorySlug": "vehicle",
-      "priceCents": 2899999,
-      "discountPct": 4,
-      "seedRatingAvg": 4.05,
-      "seedRatingCount": 3,
-      "stock": 54,
-      "images": [
-        "https://cdn.dummyjson.com/product-images/vehicle/300-touring/1.webp",
-        "https://cdn.dummyjson.com/product-images/vehicle/300-touring/2.webp",
-        "https://cdn.dummyjson.com/product-images/vehicle/300-touring/3.webp",
-        "https://cdn.dummyjson.com/product-images/vehicle/300-touring/4.webp",
-        "https://cdn.dummyjson.com/product-images/vehicle/300-touring/5.webp",
-        "https://cdn.dummyjson.com/product-images/vehicle/300-touring/6.webp"
-      ]
-    },
-    {
-      "slug": "charger-sxt-rwd",
-      "title": "Charger SXT RWD",
-      "description": "The Charger SXT RWD is a powerful and sporty rear-wheel-drive sedan, offering a blend of performance and practicality.",
-      "brand": "Dodge",
-      "categorySlug": "vehicle",
-      "priceCents": 3299999,
-      "discountPct": 8,
-      "seedRatingAvg": 2.58,
-      "seedRatingCount": 3,
-      "stock": 57,
-      "images": [
-        "https://cdn.dummyjson.com/product-images/vehicle/charger-sxt-rwd/1.webp",
-        "https://cdn.dummyjson.com/product-images/vehicle/charger-sxt-rwd/2.webp",
-        "https://cdn.dummyjson.com/product-images/vehicle/charger-sxt-rwd/3.webp",
-        "https://cdn.dummyjson.com/product-images/vehicle/charger-sxt-rwd/4.webp",
-        "https://cdn.dummyjson.com/product-images/vehicle/charger-sxt-rwd/5.webp",
-        "https://cdn.dummyjson.com/product-images/vehicle/charger-sxt-rwd/6.webp"
-      ]
-    },
-    {
-      "slug": "dodge-hornet-gt-plus",
-      "title": "Dodge Hornet GT Plus",
-      "description": "The Dodge Hornet GT Plus is a compact and agile hatchback, perfect for urban driving with a touch of sportiness.",
-      "brand": "Dodge",
-      "categorySlug": "vehicle",
-      "priceCents": 2499999,
-      "discountPct": 3,
-      "seedRatingAvg": 2.65,
-      "seedRatingCount": 3,
-      "stock": 82,
-      "images": [
-        "https://cdn.dummyjson.com/product-images/vehicle/dodge-hornet-gt-plus/1.webp",
-        "https://cdn.dummyjson.com/product-images/vehicle/dodge-hornet-gt-plus/2.webp",
-        "https://cdn.dummyjson.com/product-images/vehicle/dodge-hornet-gt-plus/3.webp",
-        "https://cdn.dummyjson.com/product-images/vehicle/dodge-hornet-gt-plus/4.webp",
-        "https://cdn.dummyjson.com/product-images/vehicle/dodge-hornet-gt-plus/5.webp",
-        "https://cdn.dummyjson.com/product-images/vehicle/dodge-hornet-gt-plus/6.webp"
-      ]
-    },
-    {
-      "slug": "durango-sxt-rwd",
-      "title": "Durango SXT RWD",
-      "description": "The Durango SXT RWD is a spacious and versatile SUV, known for its strong performance and family-friendly features.",
-      "brand": "Dodge",
-      "categorySlug": "vehicle",
-      "priceCents": 3699999,
-      "discountPct": 16,
-      "seedRatingAvg": 4.07,
-      "seedRatingCount": 3,
-      "stock": 95,
-      "images": [
-        "https://cdn.dummyjson.com/product-images/vehicle/durango-sxt-rwd/1.webp",
-        "https://cdn.dummyjson.com/product-images/vehicle/durango-sxt-rwd/2.webp",
-        "https://cdn.dummyjson.com/product-images/vehicle/durango-sxt-rwd/3.webp",
-        "https://cdn.dummyjson.com/product-images/vehicle/durango-sxt-rwd/4.webp",
-        "https://cdn.dummyjson.com/product-images/vehicle/durango-sxt-rwd/5.webp",
-        "https://cdn.dummyjson.com/product-images/vehicle/durango-sxt-rwd/6.webp"
-      ]
-    },
-    {
-      "slug": "pacifica-touring",
-      "title": "Pacifica Touring",
-      "description": "The Pacifica Touring is a stylish and well-equipped minivan, offering comfort and convenience for family journeys.",
-      "brand": "Chrysler",
-      "categorySlug": "vehicle",
-      "priceCents": 3199999,
-      "discountPct": 15,
-      "seedRatingAvg": 3.62,
-      "seedRatingCount": 3,
-      "stock": 53,
-      "images": [
-        "https://cdn.dummyjson.com/product-images/vehicle/pacifica-touring/1.webp",
-        "https://cdn.dummyjson.com/product-images/vehicle/pacifica-touring/2.webp",
-        "https://cdn.dummyjson.com/product-images/vehicle/pacifica-touring/3.webp",
-        "https://cdn.dummyjson.com/product-images/vehicle/pacifica-touring/4.webp",
-        "https://cdn.dummyjson.com/product-images/vehicle/pacifica-touring/5.webp",
-        "https://cdn.dummyjson.com/product-images/vehicle/pacifica-touring/6.webp"
       ]
     },
     {

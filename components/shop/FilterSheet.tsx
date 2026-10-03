@@ -15,6 +15,7 @@ export function FilterSheet({ resultCount, activeCount, ...controls }: SheetProp
       <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface p-3 md:hidden">
         <button
           className="w-full rounded-full bg-accent px-4 py-3 text-sm font-semibold text-white hover:opacity-90 focus:outline-2 focus:outline-accent"
+          data-testid="filters-trigger"
           onClick={() => setOpen(true)}
           type="button"
         >

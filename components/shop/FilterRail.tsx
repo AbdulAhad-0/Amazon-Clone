@@ -214,6 +214,10 @@ function PriceInputs({ parsed, onUpdate }: PriceInputsProps) {
           {parsed.maxCents !== undefined && `Max ${formatCents(parsed.maxCents)}`}
         </p>
       )}
+      {/* Without a submit button, Enter does not implicitly submit a multi-field form */}
+      <button className="sr-only" type="submit">
+        Apply price
+      </button>
     </form>
   );
 }

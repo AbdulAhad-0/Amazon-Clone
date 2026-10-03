@@ -470,3 +470,28 @@ export async function getProductDetail(slug: string): Promise<ProductDetailData 
     related,
   };
 }
+
+// ---- Slice 10 hero carousel ----
+export interface HeroData {
+  maxDiscountPct: number;
+  images: string[];
+}
+
+// Three real product photos (biggest discounts, in stock) + the real max
+// discount used by the deals slide headline.
+export async function getHeroData(): Promise<HeroData> {
+  const supabase = await createClient();
+  const res = await supabase
+    .from("products")
+    .select("discount_pct, product_images(url, position)")
+    .gt("stock", 0)
+    .order("discount_pct", { ascending: false })
+    .order("id", { ascending: true })
+    .limit(3);
+  if (res.error) throw new Error(`hero: ${res.error.message}`);
+  const rows = (res.data ?? []) as { discount_pct: number; product_images: { url: string; position: number }[] }[];
+  return {
+    maxDiscountPct: rows.length > 0 ? Number(rows[0].discount_pct) : 0,
+    images: rows.map((r) => firstImage(r.product_images)).filter((u) => u !== ""),
+  };
+}

@@ -9,6 +9,9 @@
   --ink-muted: #5c5f6b;
   --line: #e4e1da;
   --danger: #b3261e;
+  /* Slice 10 hero carousel — soft indigo tint + warm sand (tokens only) */
+  --hero-indigo: #eceefb;
+  --hero-sand: #f4ead8;
 }
 
 @theme inline {

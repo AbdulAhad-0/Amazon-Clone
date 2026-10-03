@@ -1,10 +1,11 @@
 import Link from "next/link";
 import type { ProductCardData } from "@/lib/shop";
-import { getHomeData } from "@/lib/shop";
+import { getHeroData, getHomeData } from "@/lib/shop";
 import { FREE_SHIPPING_CENTS } from "@/lib/pricing";
 import { formatCents } from "@/lib/money";
 import { NavGroupGrid } from "@/components/shop/NavGroupGrid";
 import { ProductCard } from "@/components/shop/ProductCard";
+import { HeroCarousel, type HeroSlide } from "@/components/home/HeroCarousel";
 import { getUser } from "@/lib/supabase/getUser";
 
 // Trust copy is grounded in real rules: free-ship threshold comes from the
@@ -57,29 +58,42 @@ function Rail({ title, href, items, signedIn }: RailProps) {
 }
 
 export default async function HomePage() {
-  const { groupTiles, topRated, deals, groupRails } = await getHomeData();
+  const [{ groupTiles, topRated, deals, groupRails }, hero] = await Promise.all([
+    getHomeData(),
+    getHeroData(),
+  ]);
   const user = await getUser();
   const signedIn = user !== null;
   const hasProducts = topRated.length > 0;
 
+  const slides: HeroSlide[] = [
+    {
+      eyebrow: "Vendra",
+      headline: "What you see is what you pay.",
+      sentence: "Real prices, real stock, and the full total before checkout — no surprises, ever.",
+      cta: { href: "/#shop-by-category", label: "Browse categories" },
+    },
+    ...(hero.maxDiscountPct > 0
+      ? [
+          {
+            eyebrow: "Today's deals",
+            headline: `Today's deals: up to ${hero.maxDiscountPct}% off`,
+            sentence: "Hand-picked markdowns on in-stock products — the discount you see is the discount you get.",
+            cta: { href: "/deals", label: "Shop deals" },
+          },
+        ]
+      : []),
+    {
+      eyebrow: "Free shipping",
+      headline: `Free shipping on orders over ${formatCents(FREE_SHIPPING_CENTS)}`,
+      sentence: "Reach the threshold and standard shipping is on us — shown up front in your cart.",
+      cta: { href: "/search", label: "Start searching" },
+    },
+  ];
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
-      {/* Typographic hero */}
-      <header className="mb-8 rounded-3xl border border-line bg-paper px-6 py-12 sm:px-10 sm:py-16">
-        <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-accent">Vendra</p>
-        <h1 className="max-w-2xl font-display text-4xl font-semibold leading-tight text-ink [text-wrap:balance] sm:text-5xl">
-          What you see is what you pay.
-        </h1>
-        <p className="mt-4 max-w-prose text-ink-muted">
-          Real prices, real stock, and the full total before checkout — no surprises, ever.
-        </p>
-        <Link
-          className="mt-6 inline-block rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white hover:opacity-90 focus:outline-2 focus:outline-accent"
-          href="#shop-by-category"
-        >
-          Browse categories
-        </Link>
-      </header>
+      <HeroCarousel images={hero.images} slides={slides} />
 
       {/* Trust strip */}
       <section aria-label="Why shop here" className="mb-10">
@@ -102,6 +116,28 @@ export default async function HomePage() {
         ) : (
           <NavGroupGrid tiles={groupTiles} />
         )}
+      </section>
+
+      <section aria-label="Shop by budget" className="mb-10">
+        <h2 className="mb-3 font-display text-xl font-semibold text-ink">Shop by budget</h2>
+        <div className="flex flex-wrap gap-3">
+          {(
+            [
+              { label: "Under $25", href: "/search?max=25" },
+              { label: "$25–$50", href: "/search?min=25&max=50" },
+              { label: "$50–$100", href: "/search?min=50&max=100" },
+              { label: "$100+", href: "/search?min=100" },
+            ] as const
+          ).map((chip) => (
+            <Link
+              className="inline-flex min-h-11 items-center rounded-full border border-line bg-paper px-5 text-sm font-medium text-ink hover:bg-surface focus:outline-2 focus:outline-accent"
+              href={chip.href}
+              key={chip.href}
+            >
+              {chip.label}
+            </Link>
+          ))}
+        </div>
       </section>
 
       {hasProducts ? (

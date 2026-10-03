@@ -21,16 +21,28 @@ export function buildQOrClause(q: string): string {
 
 export type SearchParams = Record<string, string | string[] | undefined>;
 
-export const SORT_VALUES = ["relevance", "price_asc", "price_desc", "rating", "newest"] as const;
+export const SORT_VALUES = ["relevance", "price_asc", "price_desc", "rating", "newest", "discount"] as const;
 export type SortValue = (typeof SORT_VALUES)[number];
+
+// Slice 3 spec whitelist for the SEARCH page UI (discount is parseable in
+// URLs but the search rail keeps its original five options).
+export const SEARCH_SORTS: readonly SortValue[] = [
+  "relevance",
+  "price_asc",
+  "price_desc",
+  "rating",
+  "newest",
+];
 
 export interface ParsedSearchParams {
   q?: string;
   group?: string;
+  cat?: string;
   brand?: string;
   minCents?: number;
   maxCents?: number;
   rating?: 3 | 4;
+  deals?: boolean;
   sort: SortValue;
   page: number;
 }
@@ -55,6 +67,12 @@ export function parseSearchParams(raw: SearchParams): ParsedSearchParams {
 
   const group = first(raw.group);
   if (group !== undefined) out.group = group;
+
+  const cat = first(raw.cat);
+  if (cat !== undefined && /^[a-z0-9-]{1,60}$/.test(cat)) out.cat = cat;
+
+  const deals = first(raw.deals);
+  if (deals === "1") out.deals = true;
 
   const brand = first(raw.brand);
   if (brand !== undefined) out.brand = brand;
@@ -90,18 +108,24 @@ function centsToDollars(cents: number): string {
   return (cents / 100).toString();
 }
 
-export function buildSearchUrl(parsed: ParsedSearchParams): string {
+export function buildSearchUrl(
+  parsed: ParsedSearchParams,
+  base = "/search",
+  defaultSort: SortValue = "relevance",
+): string {
   const params = new URLSearchParams();
   if (parsed.q !== undefined) params.set("q", parsed.q);
   if (parsed.group !== undefined) params.set("group", parsed.group);
+  if (parsed.cat !== undefined) params.set("cat", parsed.cat);
   if (parsed.brand !== undefined) params.set("brand", parsed.brand);
   if (parsed.minCents !== undefined) params.set("min", centsToDollars(parsed.minCents));
   if (parsed.maxCents !== undefined) params.set("max", centsToDollars(parsed.maxCents));
   if (parsed.rating !== undefined) params.set("rating", String(parsed.rating));
-  if (parsed.sort !== "relevance") params.set("sort", parsed.sort);
+  if (parsed.deals === true) params.set("deals", "1");
+  if (parsed.sort !== defaultSort) params.set("sort", parsed.sort);
   if (parsed.page !== 1) params.set("page", String(parsed.page));
   const qs = params.toString();
-  return qs === "" ? "/search" : `/search?${qs}`;
+  return qs === "" ? base : `${base}?${qs}`;
 }
 
 // ---- query execution (validated values only; eq/in are bound params) ----
@@ -135,6 +159,10 @@ const ORDERS: Record<SortValue, { col: string; asc: boolean }[]> = {
   ],
   newest: [
     { col: "created_at", asc: false },
+    { col: "slug", asc: true },
+  ],
+  discount: [
+    { col: "discount_pct", asc: false },
     { col: "slug", asc: true },
   ],
 };
@@ -179,16 +207,19 @@ export async function applyFilters(qb: SupabaseClient, raw: SearchParams): Promi
     if ((b.data ?? []).length > 0) brand = p.brand;
   }
 
-  const select = navGroupId !== undefined
+  const needsCategoryJoin = navGroupId !== undefined || p.cat !== undefined;
+  const select = needsCategoryJoin
     ? "id, slug, title, brand, price_cents, discount_pct, rating_avg, rating_count, stock, product_images(url, position), categories!inner(nav_group_id)"
     : "id, slug, title, brand, price_cents, discount_pct, rating_avg, rating_count, stock, product_images(url, position)";
 
   let query = qb.from("products").select(select, { count: "exact" });
   if (navGroupId !== undefined) query = query.eq("categories.nav_group_id", navGroupId);
+  if (p.cat !== undefined) query = query.eq("categories.slug", p.cat);
   if (brand !== undefined) query = query.eq("brand", brand);
   if (p.minCents !== undefined) query = query.gte("price_cents", p.minCents);
   if (p.maxCents !== undefined) query = query.lte("price_cents", p.maxCents);
   if (p.rating !== undefined) query = query.gte("rating_avg", p.rating);
+  if (p.deals === true) query = query.gt("discount_pct", 0);
   if (p.q !== undefined) query = query.or(buildQOrClause(p.q));
   for (const o of ORDERS[p.sort]) query = query.order(o.col, { ascending: o.asc });
   const from = (p.page - 1) * SEARCH_PAGE_SIZE;

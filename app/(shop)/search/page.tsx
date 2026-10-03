@@ -3,7 +3,7 @@ import { ActiveFilters } from "@/components/shop/ActiveFilters";
 import { FilterRail } from "@/components/shop/FilterRail";
 import { FilterSheet } from "@/components/shop/FilterSheet";
 import { ProductGrid } from "@/components/shop/ProductGrid";
-import { applyFilters, parseSearchParams, type SearchParams } from "@/lib/search";
+import { SEARCH_SORTS, applyFilters, parseSearchParams, type SearchParams } from "@/lib/search";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/getUser";
 
@@ -49,7 +49,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       <div className="flex gap-6 pb-24 md:pb-0">
         <aside className="hidden w-64 shrink-0 md:block">
           <div className="sticky top-20">
-            <FilterRail brands={brands} groups={groups} parsed={parsed} />
+            <FilterRail brands={brands} groups={groups} parsed={parsed} sortValues={SEARCH_SORTS} />
           </div>
         </aside>
 
@@ -83,6 +83,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         groups={groups}
         parsed={parsed}
         resultCount={total}
+        sortValues={SEARCH_SORTS}
       />
     </div>
   );

@@ -194,6 +194,103 @@ export async function getCategoryPage(slug: string, page: number): Promise<Categ
   };
 }
 
+// ---- category page support (Slice 5, Part 3) ----
+
+export interface GroupMeta {
+  id: string;
+  slug: string;
+  name: string;
+}
+
+export async function getGroupMeta(slug: string): Promise<GroupMeta | null> {
+  const supabase = await createClient();
+  const res = await supabase
+    .from("nav_groups")
+    .select("id, slug, name")
+    .eq("slug", slug)
+    .maybeSingle();
+  if (res.error) throw new Error(`nav_groups: ${res.error.message}`);
+  return res.data ?? null;
+}
+
+export interface CategoryChipData {
+  slug: string;
+  name: string;
+  count: number;
+}
+
+/** Sub-category chips with counts + the unfiltered group total for "All". */
+export async function getCategoryChips(
+  navGroupId: string,
+): Promise<{ chips: CategoryChipData[]; allCount: number }> {
+  const supabase = await createClient();
+
+  const catsRes = await supabase
+    .from("categories")
+    .select("id, slug, name")
+    .eq("nav_group_id", navGroupId)
+    .order("name");
+  if (catsRes.error) throw new Error(`categories: ${catsRes.error.message}`);
+
+  const chips: CategoryChipData[] = [];
+  for (const c of catsRes.data ?? []) {
+    const countRes = await supabase
+      .from("products")
+      .select("id, categories!inner(id)", { count: "exact", head: true })
+      .eq("categories.id", c.id);
+    if (countRes.error) throw new Error(`category count: ${countRes.error.message}`);
+    chips.push({ slug: c.slug, name: c.name, count: countRes.count ?? 0 });
+  }
+
+  const allRes = await supabase
+    .from("products")
+    .select("id, categories!inner(nav_group_id)", { count: "exact", head: true })
+    .eq("categories.nav_group_id", navGroupId);
+  if (allRes.error) throw new Error(`group count: ${allRes.error.message}`);
+
+  return { chips, allCount: allRes.count ?? 0 };
+}
+
+/** "Top rated" rail: 8 best-rated products in the group, no filters applied. */
+export async function getTopRatedRail(navGroupId: string): Promise<ProductCardData[]> {
+  const supabase = await createClient();
+  const res = await supabase
+    .from("products")
+    .select(
+      "id, slug, title, brand, price_cents, discount_pct, rating_avg, rating_count, stock, categories!inner(nav_group_id), product_images(url, position)",
+    )
+    .eq("categories.nav_group_id", navGroupId)
+    .order("rating_avg", { ascending: false })
+    .order("slug", { ascending: true })
+    .limit(8);
+  if (res.error) throw new Error(`top rated: ${res.error.message}`);
+
+  type RailRow = {
+    id: string;
+    slug: string;
+    title: string;
+    brand: string | null;
+    price_cents: number;
+    discount_pct: number;
+    rating_avg: number;
+    rating_count: number;
+    stock: number;
+    product_images: { url: string; position: number }[] | null;
+  };
+  return ((res.data ?? []) as RailRow[]).map((p) => ({
+    id: p.id,
+    slug: p.slug,
+    title: p.title,
+    brand: p.brand,
+    priceCents: p.price_cents,
+    discountPct: p.discount_pct,
+    ratingAvg: Number(p.rating_avg),
+    ratingCount: p.rating_count,
+    stock: p.stock,
+    image: firstImage(p.product_images),
+  }));
+}
+
 // ---- product detail ----
 
 export interface ProductDetailData {

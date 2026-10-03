@@ -154,3 +154,56 @@ describe("buildSearchUrl — URL state round-trip", () => {
     expect(buildSearchUrl(parseSearchParams({ q: "men's" }))).toBe("/search?q=men%27s");
   });
 });
+
+describe("parseSearchParams — cat and deals (category page params)", () => {
+  it("keeps a valid sub-category slug", () => {
+    expect(parseSearchParams({ cat: "phones" }).cat).toBe("phones");
+    expect(parseSearchParams({ cat: "4k-tv-stands" }).cat).toBe("4k-tv-stands");
+  });
+  it("drops invalid cat slugs (charset guard)", () => {
+    expect(parseSearchParams({ cat: "../../etc" }).cat).toBeUndefined();
+    expect(parseSearchParams({ cat: "Phones!" }).cat).toBeUndefined();
+    expect(parseSearchParams({ cat: "a b" }).cat).toBeUndefined();
+    expect(parseSearchParams({ cat: "" }).cat).toBeUndefined();
+    expect(parseSearchParams({ cat: "x".repeat(61) }).cat).toBeUndefined();
+  });
+  it("deals=1 means deals-only; anything else ignored", () => {
+    expect(parseSearchParams({ deals: "1" }).deals).toBe(true);
+    expect(parseSearchParams({ deals: "0" }).deals).toBeUndefined();
+    expect(parseSearchParams({ deals: "yes" }).deals).toBeUndefined();
+    expect(parseSearchParams({}).deals).toBeUndefined();
+  });
+  it("sort=discount is whitelisted (Biggest discount)", () => {
+    expect(parseSearchParams({ sort: "discount" }).sort).toBe("discount");
+  });
+});
+
+describe("buildSearchUrl — base path + default sort (category reuse)", () => {
+  it("builds against a category base path", () => {
+    const url = buildSearchUrl(parseSearchParams({ brand: "Bose" }), "/c/electronics");
+    expect(url).toBe("/c/electronics?brand=Bose");
+  });
+  it("omits the default sort for the category default (rating)", () => {
+    expect(buildSearchUrl(parseSearchParams({ sort: "rating" }), "/c/phones", "rating")).toBe("/c/phones");
+    expect(buildSearchUrl(parseSearchParams({ sort: "price_asc" }), "/c/phones", "rating")).toBe(
+      "/c/phones?sort=price_asc",
+    );
+  });
+  it("keeps the search default (relevance) unchanged", () => {
+    expect(buildSearchUrl(parseSearchParams({ sort: "rating" }))).toBe("/search?sort=rating");
+    expect(buildSearchUrl(parseSearchParams({ sort: "relevance" }))).toBe("/search");
+  });
+  it("round-trips cat + deals + price through the category URL", () => {
+    const raw = { cat: "laptops", deals: "1", min: "300", max: "2000", sort: "newest", page: "2" };
+    const parsed = parseSearchParams(raw);
+    const url = buildSearchUrl(parsed, "/c/electronics", "rating");
+    expect(url).toBe("/c/electronics?cat=laptops&min=300&max=2000&deals=1&sort=newest&page=2");
+    const rebuilt = Object.fromEntries(new URLSearchParams(url.slice(url.indexOf("?") + 1)));
+    expect(parseSearchParams(rebuilt)).toEqual(parsed);
+  });
+  it("a category URL never carries a group param (group lives in the path)", () => {
+    const parsed = parseSearchParams({ group: "electronics", brand: "Bose", sort: "rating" });
+    const url = buildSearchUrl({ ...parsed, group: undefined }, "/c/electronics", "rating");
+    expect(url).toBe("/c/electronics?brand=Bose");
+  });
+});

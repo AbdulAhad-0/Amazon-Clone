@@ -14,6 +14,18 @@ export interface FilterContext {
   parsed: ParsedSearchParams;
   groups: { slug: string; name: string }[];
   brands: string[];
+  /** Where controls write to; "/search" on search, /c/[group] on category pages. */
+  baseUrl?: string;
+  /** Sort value omitted from the URL (relevance on search, rating on category). */
+  defaultSort?: ParsedSearchParams["sort"];
+  /** Sort <option> labels; category overrides rating → "Top rated". */
+  sortLabels?: Partial<Record<string, string>>;
+  /** Sort whitelist for the <select>; category passes its own five. */
+  sortValues?: readonly ParsedSearchParams["sort"][];
+  /** Category pages fix the nav group in the path — hide the group select. */
+  showGroup?: boolean;
+  /** Category pages offer a deals-only toggle. */
+  showDeals?: boolean;
 }
 
 export const SORT_LABELS: Record<string, string> = {
@@ -22,6 +34,7 @@ export const SORT_LABELS: Record<string, string> = {
   price_desc: "Price: High to Low",
   rating: "Avg. customer rating",
   newest: "Newest arrivals",
+  discount: "Biggest discount",
 };
 
 const RATING_OPTIONS = [
@@ -34,40 +47,56 @@ interface FilterControlsProps extends FilterContext {
   idPrefix: string;
 }
 
-export function FilterControls({ parsed, groups, brands, idPrefix }: FilterControlsProps) {
+export function FilterControls({
+  parsed,
+  groups,
+  brands,
+  idPrefix,
+  baseUrl = "/search",
+  defaultSort = "relevance",
+  sortLabels,
+  sortValues = SORT_VALUES,
+  showGroup = true,
+  showDeals = false,
+}: FilterControlsProps) {
   const router = useRouter();
 
   function update(patch: Partial<ParsedSearchParams>) {
-    router.push(buildSearchUrl({ ...parsed, ...patch, page: 1 }), { scroll: false });
+    router.push(buildSearchUrl({ ...parsed, ...patch, page: 1 }, baseUrl, defaultSort), {
+      scroll: false,
+    });
   }
 
   function clearAll() {
-    router.push("/search", { scroll: false });
+    router.push(baseUrl, { scroll: false });
   }
 
   const knownGroup = groups.some((g) => g.slug === parsed.group);
   const brandOptions = [...new Set([...brands, ...(parsed.brand ? [parsed.brand] : [])])].sort();
+  const labels: Record<string, string | undefined> = { ...SORT_LABELS, ...sortLabels };
 
   return (
     <div className="space-y-6">
-      <div>
-        <label className="mb-1 block text-sm font-semibold text-ink" htmlFor={`${idPrefix}-group`}>
-          Category
-        </label>
-        <select
-          className="w-full rounded-xl border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-2 focus:outline-accent"
-          id={`${idPrefix}-group`}
-          onChange={(e) => update({ group: e.target.value || undefined })}
-          value={knownGroup ? (parsed.group ?? "") : ""}
-        >
-          <option value="">All categories</option>
-          {groups.map((g) => (
-            <option key={g.slug} value={g.slug}>
-              {g.name}
-            </option>
-          ))}
-        </select>
-      </div>
+      {showGroup && (
+        <div>
+          <label className="mb-1 block text-sm font-semibold text-ink" htmlFor={`${idPrefix}-group`}>
+            Category
+          </label>
+          <select
+            className="w-full rounded-xl border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-2 focus:outline-accent"
+            id={`${idPrefix}-group`}
+            onChange={(e) => update({ group: e.target.value || undefined })}
+            value={knownGroup ? (parsed.group ?? "") : ""}
+          >
+            <option value="">All categories</option>
+            {groups.map((g) => (
+              <option key={g.slug} value={g.slug}>
+                {g.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <fieldset>
         <legend className="mb-2 text-sm font-semibold text-ink">Brand</legend>
@@ -117,6 +146,18 @@ export function FilterControls({ parsed, groups, brands, idPrefix }: FilterContr
         </div>
       </fieldset>
 
+      {showDeals && (
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-ink">
+          <input
+            checked={parsed.deals === true}
+            className="accent-[var(--accent)]"
+            onChange={(e) => update({ deals: e.target.checked ? true : undefined })}
+            type="checkbox"
+          />
+          On sale only
+        </label>
+      )}
+
       <div>
         <label className="mb-1 block text-sm font-semibold text-ink" htmlFor={`${idPrefix}-sort`}>
           Sort by
@@ -127,9 +168,9 @@ export function FilterControls({ parsed, groups, brands, idPrefix }: FilterContr
           onChange={(e) => update({ sort: e.target.value as ParsedSearchParams["sort"] })}
           value={parsed.sort}
         >
-          {SORT_VALUES.map((s) => (
+          {sortValues.map((s) => (
             <option key={s} value={s}>
-              {SORT_LABELS[s]}
+              {labels[s]}
             </option>
           ))}
         </select>

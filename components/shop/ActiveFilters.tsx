@@ -8,6 +8,8 @@ import { SORT_LABELS } from "./FilterRail";
 interface ActiveFiltersProps {
   parsed: ParsedSearchParams;
   groups: { slug: string; name: string }[];
+  baseUrl?: string;
+  defaultSort?: ParsedSearchParams["sort"];
 }
 
 interface Chip {
@@ -16,7 +18,12 @@ interface Chip {
   remove: Partial<ParsedSearchParams>;
 }
 
-export function ActiveFilters({ parsed, groups }: ActiveFiltersProps) {
+export function ActiveFilters({
+  parsed,
+  groups,
+  baseUrl = "/search",
+  defaultSort = "relevance",
+}: ActiveFiltersProps) {
   const router = useRouter();
 
   const chips: Chip[] = [];
@@ -32,17 +39,20 @@ export function ActiveFilters({ parsed, groups }: ActiveFiltersProps) {
     chips.push({ key: "max", label: `Max ${formatCents(parsed.maxCents)}`, remove: { maxCents: undefined } });
   if (parsed.rating !== undefined)
     chips.push({ key: "rating", label: `${parsed.rating} stars & up`, remove: { rating: undefined } });
-  if (parsed.sort !== "relevance")
-    chips.push({ key: "sort", label: SORT_LABELS[parsed.sort] ?? parsed.sort, remove: { sort: "relevance" } });
+  if (parsed.deals === true) chips.push({ key: "deals", label: "On sale", remove: { deals: undefined } });
+  if (parsed.sort !== defaultSort)
+    chips.push({ key: "sort", label: SORT_LABELS[parsed.sort] ?? parsed.sort, remove: { sort: defaultSort } });
 
   if (chips.length === 0) return null;
 
   function removeChip(remove: Partial<ParsedSearchParams>) {
-    router.push(buildSearchUrl({ ...parsed, ...remove, page: 1 }), { scroll: false });
+    router.push(buildSearchUrl({ ...parsed, ...remove, page: 1 }, baseUrl, defaultSort), {
+      scroll: false,
+    });
   }
 
   function clearAll() {
-    router.push("/search", { scroll: false });
+    router.push(baseUrl, { scroll: false });
   }
 
   return (

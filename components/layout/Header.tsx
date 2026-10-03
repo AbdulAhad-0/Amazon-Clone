@@ -6,6 +6,7 @@ import { getUser } from "@/lib/supabase/getUser";
 import { createClient } from "@/lib/supabase/server";
 import { AccountMenu } from "./AccountMenu";
 import { CartBadge } from "./CartBadge";
+import { QuickLinksRow } from "./QuickLinksRow";
 import { SearchSuggest } from "./SearchSuggest";
 
 // Per-request session read (cookies) — never prerendered into the static
@@ -36,7 +37,11 @@ async function UserSlot(): Promise<ReactElement> {
   );
 }
 
-export function Header() {
+export async function Header(): Promise<ReactElement> {
+  const supabase = await createClient();
+  const groupsRes = await supabase.from("nav_groups").select("slug, name").order("sort_order");
+  const groups = groupsRes.data ?? [];
+
   return (
     <header className="sticky top-0 z-10 border-b border-line bg-surface">
       <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3">
@@ -64,6 +69,7 @@ export function Header() {
           <UserSlot />
         </Suspense>
       </div>
+      <QuickLinksRow groups={groups} />
     </header>
   );
 }

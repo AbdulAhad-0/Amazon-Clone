@@ -7,8 +7,8 @@ const columns = [
     heading: "Shop",
     links: [
       { href: "/search", label: "Search" },
-      { href: "/search?deals=1", label: "Today's Deals" },
-      { href: "/search?sort=rating", label: "Best Sellers" },
+      { href: "/deals", label: "Today's Deals" },
+      { href: "/best-sellers", label: "Best Sellers" },
     ],
   },
   {

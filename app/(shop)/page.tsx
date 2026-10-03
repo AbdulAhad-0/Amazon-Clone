@@ -143,7 +143,7 @@ export default async function HomePage() {
       {hasProducts ? (
         <>
           <Rail title="Top rated" href="/search?sort=rating" items={topRated} signedIn={signedIn} />
-          <Rail title="Deals" href="/search?deals=1" items={deals} signedIn={signedIn} />
+          <Rail title="Deals" href="/deals" items={deals} signedIn={signedIn} />
           {groupRails.map((rail) => (
             <Rail
               href={`/c/${rail.slug}`}

@@ -18,8 +18,8 @@ All money: `*_cents INTEGER` (USD, ASSUMPTION). Timestamps: `timestamptz`.
 | Table | Columns (key ones) | Notes |
 |---|---|---|
 | `profiles` | `id uuid PK → auth.users`, `display_name`, `created_at` | Row created by trigger on sign-up; `display_name` = signup name field or email prefix |
-| `nav_groups` | `id`, `slug` unique (e.g. `electronics`), `name`, `sort_order` | 8–10 groups; slugs drive `/c/[group]` routes (ADR-005) |
-| `categories` | `id`, `slug` unique, `name`, `nav_group_id → nav_groups`, `sort_order` | 24 DummyJSON categories collapsed into nav groups |
+| `nav_groups` | `id`, `slug` unique (e.g. `electronics`), `name`, `sort_order` | 6 groups (ADR-021 + furniture merge); slugs drive `/c/[group]` routes |
+| `categories` | `id`, `slug` unique, `name`, `nav_group_id → nav_groups`, `sort_order` | 22 seeded categories (of 24 DummyJSON source) collapsed into nav groups |
 | `products` | `id`, `slug` unique, `title`, `description`, `category_id → categories`, `brand` (**nullable** — hide UI line when null), `price_cents` (list price), `discount_pct check (0..100)`, `stock`, `seed_rating_avg numeric(3,2)`, `seed_rating_count int`, `rating_avg`, `rating_count` (derived), `created_at` | No seller column — single-role. Seed baseline lives in `seed_rating_*`; `rating_*` maintained by trigger (Slice 8) |
 | `product_images` | `id`, `product_id → products`, `url`, `position` | URLs point at `cdn.dummyjson.com` (ADR-006) |
 | `addresses` | `id`, `user_id → profiles`, `full_name`, `phone`, `line1`, `line2?`, `city`, `state`, `zip`, `country`, `is_default` | Checkout writes an immutable snapshot into `orders.ship_address` |
@@ -166,7 +166,7 @@ One transaction:
 ## 8. Search, filters, sort
 
 - Query built from URL params only — shareable, back/forward safe.
-- Matching: `ILIKE` over `title, brand, description` (194 rows — FTS is unnecessary; YAGNI).
+- Matching: `ILIKE` over `title, brand, description` (184 rows — FTS is unnecessary; YAGNI).
   **No string-built `.or()` filters:** every dynamic value goes through `escapeLike()` (escapes
   `% _ , ( ) \` and quotes) before it enters a builder filter, and filter inputs are whitelisted;
   `tests/search.test.ts` covers injection attempts (`q=men's`, `q=a,b`, `q=%`).
@@ -228,21 +228,24 @@ file (git-ignored) and the Vercel dashboard — never in docs, logs, or client b
 - **Vercel Hobby:** generous but metered bandwidth/function-duration; `unoptimized` images avoid
   spending optimizer bandwidth on hotlinked CDN photos.
 - **DummyJSON:** no rate-limit guarantee; images hotlinked with a fallback tile (ADR-006).
-- Hard caps: seed JSON < 10 MB on disk; no download script > 10 MB; 194 products is one API page.
+- Hard caps: seed JSON < 10 MB on disk; no download script > 10 MB; the 194-product source is one API page.
 
 ## 12. Seed-data source
 
-- **DummyJSON** — verified 2026-10-03: 194 products, 24 categories, 1–4 photos + thumbnail each,
+- **DummyJSON** — verified 2026-10-03: source has 194 products / 24 categories (seed excludes
+  `vehicle` + `motorcycle` → **184 products / 22 categories / 6 nav groups** — ADR-021 +
+  furniture merge), 1–4 photos + thumbnail each,
   MIT `LICENSE` file. Fetched **once** into committed `data/seed-products.json` (~1–2 MB).
 - Runtime dependency: product images only (CDN) — graceful fallback if it dies (ADR-006).
-- Category collapse: 24 categories → **8–10 nav groups**, each with a **slug** (`nav_groups`
-  table) — exact mapping fixed in Slice 1.
+- Category collapse: 22 seeded categories (of 24 source) → **6 nav groups**, each with a
+  **slug** (`nav_groups` table) — mapping fixed in Slice 1, merged in Slice 2 follow-up.
 - **Seeding is upsert-on-slug with stable ids** (`onConflict: 'slug'`), so re-runs never change
   ids that other tables (reviews, orders in tests) reference.
 - **Rating baseline:** `seed_rating_avg` / `seed_rating_count` store DummyJSON's own
-  numbers as display baseline; `rating_avg` / `rating_count` are initialized from them and later
-  maintained by the review trigger (Slice 8) as
-  `count = seed_count + reviews` and `avg = (seed_avg×seed_count + Σratings) / count`.
+  numbers as display baseline; `rating_avg` is initialized from `seed_rating_avg`, while
+  `rating_count` starts at **0** — real reviews only (ADR-022: the seed "count" is
+  `reviews.length`, not a real count) — and the review trigger (Slice 8) maintains
+  `count = |reviews|`, `avg = Σratings / count`.
 - **Seed reviews skipped** — DummyJSON review text contains reviewer emails we must not store
   (ADR-018).
 - No duplicated products, no synthetic variants (spec/owner rule).

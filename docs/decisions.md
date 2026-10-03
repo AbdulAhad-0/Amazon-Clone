@@ -158,4 +158,18 @@ the source, and DummyJSON computes it over those same 3 shown reviews. No review
 reviewer names or reviewer emails are stored (array length only); `data/seed-products.json`
 scanned: 0 email matches, 0 reviewer/reviews keys. Consequence: any doc still saying "194"
 refers to the source total, not the seed; ratings roll up from this baseline + real reviews
-(Slice 8 trigger).
+(Slice 8 trigger). *Follow-up same day: the 5-product `furniture` group was merged into
+`home-kitchen` (category re-parented, group row dropped — no product ids touched) → **6 nav
+groups**, every one with ≥1 product.*
+
+### ADR-022 · Rating display = average stars only until real reviews exist — Accepted
+Context: `seed_rating_count` is not a real count — it is the length of DummyJSON's `reviews`
+array, exactly 3 for every product (ADR-021); rendering "3 ratings" would be fabricated social
+proof. Decision: the UI shows the **average** (stars + value from `rating_avg`) and **no count**
+while `rating_count = 0`. A count renders only once real user reviews exist (Slice 8 trigger
+rollup, ADR-018), and then it shows **only the real number** of those reviews — never the seed's
+3. Data consequence (supersedes the slice-1 plan's "initialize `rating_*` = seed values"):
+`rating_avg` starts at `seed_rating_avg` (the average is real source data), `rating_count`
+starts at **0**; `npm run seed` resets untouched baselines and `verify-seed` asserts
+`rating_count_zero=184`. Consequence: count-gated UI ("Popular right now", any
+"N reviews" label) reads the live columns and simply stays hidden until Slice 8 fills them.

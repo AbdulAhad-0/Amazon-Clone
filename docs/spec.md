@@ -49,7 +49,8 @@ empty state and error state.
 ## 4. Core flows and acceptance criteria
 
 ### F1 Browse (home, category, PDP)
-- Home renders hero + the **8–10 collapsed nav groups** (not 24 raw categories) + curated rows.
+- Home renders hero + the **collapsed nav groups** (6 groups after ADR-021 exclusions + the
+  furniture merge into home-kitchen — not 24 raw categories; every group has ≥1 product) + curated rows.
 - Category page: paginated product grid, breadcrumb, count, loading skeleton, empty state.
 - PDP: image gallery (uses every image the seed provides), title, brand (**nullable** — brand line
   hidden when null), price (effective price → display),

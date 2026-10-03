@@ -30,7 +30,11 @@ const RATING_OPTIONS = [
   { value: 3, label: "3 stars & up" },
 ] as const;
 
-export function FilterControls({ parsed, groups, brands }: FilterContext) {
+interface FilterControlsProps extends FilterContext {
+  idPrefix: string;
+}
+
+export function FilterControls({ parsed, groups, brands, idPrefix }: FilterControlsProps) {
   const router = useRouter();
 
   function update(patch: Partial<ParsedSearchParams>) {
@@ -47,12 +51,12 @@ export function FilterControls({ parsed, groups, brands }: FilterContext) {
   return (
     <div className="space-y-6">
       <div>
-        <label className="mb-1 block text-sm font-semibold text-ink" htmlFor="filter-group">
+        <label className="mb-1 block text-sm font-semibold text-ink" htmlFor={`${idPrefix}-group`}>
           Category
         </label>
         <select
           className="w-full rounded-xl border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-2 focus:outline-accent"
-          id="filter-group"
+          id={`${idPrefix}-group`}
           onChange={(e) => update({ group: e.target.value || undefined })}
           value={knownGroup ? (parsed.group ?? "") : ""}
         >
@@ -72,7 +76,7 @@ export function FilterControls({ parsed, groups, brands }: FilterContext) {
             <input
               checked={parsed.brand === undefined}
               className="accent-[var(--accent)]"
-              name="filter-brand"
+              name={`${idPrefix}-brand`}
               onChange={() => update({ brand: undefined })}
               type="radio"
             />
@@ -83,7 +87,7 @@ export function FilterControls({ parsed, groups, brands }: FilterContext) {
               <input
                 checked={parsed.brand === b}
                 className="accent-[var(--accent)]"
-                name="filter-brand"
+                name={`${idPrefix}-brand`}
                 onChange={() => update({ brand: b })}
                 type="radio"
               />
@@ -103,7 +107,7 @@ export function FilterControls({ parsed, groups, brands }: FilterContext) {
               <input
                 checked={parsed.rating === opt.value}
                 className="accent-[var(--accent)]"
-                name="filter-rating"
+                name={`${idPrefix}-rating`}
                 onChange={() => update({ rating: opt.value })}
                 type="radio"
               />
@@ -114,12 +118,12 @@ export function FilterControls({ parsed, groups, brands }: FilterContext) {
       </fieldset>
 
       <div>
-        <label className="mb-1 block text-sm font-semibold text-ink" htmlFor="filter-sort">
+        <label className="mb-1 block text-sm font-semibold text-ink" htmlFor={`${idPrefix}-sort`}>
           Sort by
         </label>
         <select
           className="w-full rounded-xl border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-2 focus:outline-accent"
-          id="filter-sort"
+          id={`${idPrefix}-sort`}
           onChange={(e) => update({ sort: e.target.value as ParsedSearchParams["sort"] })}
           value={parsed.sort}
         >
@@ -218,7 +222,7 @@ export function FilterRail(props: FilterContext) {
   return (
     <nav aria-label="Filters" className="rounded-2xl border border-line bg-paper p-4">
       <h2 className="mb-4 font-display text-lg font-semibold text-ink">Filters</h2>
-      <FilterControls {...props} />
+      <FilterControls {...props} idPrefix="rail" />
     </nav>
   );
 }

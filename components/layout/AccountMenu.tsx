@@ -49,13 +49,14 @@ export function AccountMenu({ displayName }: AccountMenuProps) {
           className="absolute right-0 top-full z-30 mt-1 w-48 rounded-2xl border border-line bg-white py-1 shadow-lg"
           role="menu"
         >
-          <span
-            aria-disabled="true"
-            className="block px-4 py-2 text-sm text-ink-muted"
-            title="Arrives in a later slice"
+          <Link
+            className="block px-4 py-2 text-sm text-ink hover:bg-paper hover:text-accent focus:outline-2 focus:outline-accent"
+            href="/orders"
+            onClick={() => setOpen(false)}
+            role="menuitem"
           >
             Orders
-          </span>
+          </Link>
           <span
             aria-disabled="true"
             className="block px-4 py-2 text-sm text-ink-muted"

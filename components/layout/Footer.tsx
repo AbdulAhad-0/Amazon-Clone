@@ -1,7 +1,9 @@
 import Link from "next/link";
 
-// Cart + Orders links hidden until Slices 5/7 create those pages
-const links = [{ href: "/", label: "Home" }];
+const links = [
+  { href: "/", label: "Home" },
+  { href: "/orders", label: "Orders" },
+];
 
 export function Footer() {
   return (

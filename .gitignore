@@ -1,2 +1,15 @@
+# secrets — never commit
+.env
+.env.*
+!.env.example
+
+# build artifacts
+.next/
 node_modules/
+out/
+*.tsbuildinfo
+.vercel/
+docs/evidence/*.tmp
+
+# agent capture state
 .opencode/.capture-state.json

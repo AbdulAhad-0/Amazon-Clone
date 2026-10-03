@@ -1733,22 +1733,6 @@
       ]
     },
     {
-      "slug": "amazon-echo-plus",
-      "title": "Amazon Echo Plus",
-      "description": "The Amazon Echo Plus is a smart speaker with built-in Alexa voice control. It features premium sound quality and serves as a hub for controlling smart home devices.",
-      "brand": "Amazon",
-      "categorySlug": "mobile-accessories",
-      "priceCents": 9999,
-      "discountPct": 12,
-      "seedRatingAvg": 4.99,
-      "seedRatingCount": 3,
-      "stock": 61,
-      "images": [
-        "https://cdn.dummyjson.com/product-images/mobile-accessories/amazon-echo-plus/1.webp",
-        "https://cdn.dummyjson.com/product-images/mobile-accessories/amazon-echo-plus/2.webp"
-      ]
-    },
-    {
       "slug": "apple-airpods",
       "title": "Apple Airpods",
       "description": "The Apple Airpods offer a seamless wireless audio experience. With easy pairing, high-quality sound, and Siri integration, they are perfect for on-the-go listening.",

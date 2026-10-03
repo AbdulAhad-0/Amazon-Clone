@@ -3,11 +3,13 @@ import { join } from "node:path";
 import { navGroups, categoryToNavGroup } from "../data/nav-groups";
 
 // Live source pins (verified 2026-10-03): DummyJSON total = 194 products /
-// 24 categories. Seed excludes vehicle+motorcycle (ADR-021) -> 184 / 22 / 7.
+// 24 categories. Seed excludes vehicle+motorcycle (ADR-021) and Amazon-named
+// products (own-brand rule, ADR-021 follow-up) -> 183 / 22 / 6.
 const EXPECTED_SOURCE_PRODUCTS = 194;
 const EXPECTED_SOURCE_CATEGORIES = 24;
 const EXCLUDED_CATEGORIES = ["vehicle", "motorcycle"];
-const EXPECTED_SEED_PRODUCTS = 184;
+const EXCLUDED_TITLE_RE = /amazon/i;
+const EXPECTED_SEED_PRODUCTS = 183;
 const EXPECTED_SEED_CATEGORIES = 22;
 
 function stop(msg: string): never {
@@ -73,7 +75,9 @@ async function main() {
     stop(`fetched ${payload.products.length} of total ${payload.total} (limit too low)`);
 
   const keptSource = payload.products.filter(
-    (p: Record<string, unknown>) => String(p.category) in categoryToNavGroup,
+    (p: Record<string, unknown>) =>
+      String(p.category) in categoryToNavGroup &&
+      !EXCLUDED_TITLE_RE.test(`${p.title ?? ""} ${p.brand ?? ""} ${p.description ?? ""}`),
   );
   if (keptSource.length !== EXPECTED_SEED_PRODUCTS)
     stop(`seed products=${keptSource.length}, expected ${EXPECTED_SEED_PRODUCTS} (after exclusions)`);

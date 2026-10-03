@@ -70,7 +70,7 @@ async function main() {
   console.log(`nav ${(nav.data ?? []).map((r) => r.slug).join(" ")}`);
   console.log(`price_fn ${fn.data}`);
 
-  if (counts.products !== 184) fail(`products=${counts.products}, expected 184 (ADR-021)`);
+  if (counts.products !== 183) fail(`products=${counts.products}, expected 183 (ADR-021 + amazon-named exclusion)`);
   if (counts.categories !== 22) fail(`categories=${counts.categories}, expected 22 (ADR-021)`);
   if (counts.nav_groups !== 6)
     fail(`nav_groups=${counts.nav_groups}, expected 6 (ADR-021 + furniture merge)`);

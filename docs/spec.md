@@ -164,28 +164,90 @@ empty state and error state.
 
 ## 7. Improved and why
 
-> **EDITABLE SECTION.** Every entry below is an **ASSUMPTION** inferred from recon only — no
-> `NOTES.md` existed. Add your own pain points under §7.1; the numbered list is written so single
-> entries can be replaced without touching the rest.
+> **EDITABLE SECTION.** Every entry is labelled **CONFIRMED** (recon screenshot cited by exact
+> filename), **REPORTED** (the owner's sources say so — not personally tested), or **ASSUMPTION**
+> (inferred; no evidence either way). Add your own pain points under §7.1; the numbered list is
+> written so single entries can be replaced without touching the rest.
 
-1. **ASSUMPTION — Sign-up wall.** Four verification steps before an account exists (puzzle → email OTP
-   → phone → WhatsApp) → we do **one screen**, email + password, confirmation off for the demo.
-2. **ASSUMPTION — Vanishing header.** `2 search-bar-results-scroll-2…png` shows the top bar hiding on
-   scroll-down and reappearing on scroll-up → our header stays; on mobile it condenses, never leaves.
-3. **ASSUMPTION — Filters invisible on phones.** Only a desktop rail was captured; phone filters are
-   presumably buried → **bottom sheet** with the exact same URL-encoded state as the rail.
-4. **ASSUMPTION — Cart noise.** The cart page carries cross-sell carousels above and below the fold →
-   ours is calm: lines, subtotal, one primary CTA.
-5. **ASSUMPTION — Checkout anxiety.** A modal address form plus a floating "Secure checkout" tooltip
-   → single-page checkout with trust copy inline next to the pay button.
-6. **ASSUMPTION — Dead-end orders.** "0 orders placed" with no guidance → status **timeline** plus a
-   cancel action that actually restores stock.
-7. **ASSUMPTION — Price confusion.** Screenshots mix PKR and USD on similar pages → **one currency**
-   (ASSUMPTION: **USD**), integer cents, rendered consistently server-side.
+1. **CONFIRMED — Sign-up wall.** Four verification steps before an account exists (puzzle → email OTP
+   → phone → WhatsApp) — `5-a-puzzle-after-account-creation.png`,
+   `5-email-verification-after-puzzle-correct-completion.png`,
+   `5-phone-verification-occurs-after-email-verification.png`,
+   `5-mobile-phone-verfication-using-whatsapp.png` → we do **one screen**, email + password,
+   confirmation off for the demo.
+2. **CONFIRMED — Vanishing header.** `2  search-bar-results-scroll-2-plus-scrolling-downwards-hides-top-bar-and-scrolling-up-shows-it-again.png`
+   shows the top bar hiding on scroll-down and reappearing on scroll-up → our header stays; on mobile
+   it condenses, never leaves.
+3. **ASSUMPTION — Filters invisible on phones.** Only a desktop rail was captured
+   (`search-bar-filters-on-right.png`); phone filters are presumably buried → **bottom sheet** with
+   the exact same URL-encoded state as the rail.
+4. **CONFIRMED — Cart noise.** `Cart page.jpeg` carries cross-sell carousels above and below the fold
+   → ours is calm: lines, subtotal, one primary CTA.
+5. **CONFIRMED — Checkout anxiety.** `6-checkout-page-address-popup.png` shows a modal address form;
+   `6-checkout-page-small-drop-down-for-security-info-appears-once-security-info-clicked-in-topBar.png`
+   a floating security tooltip → single-page checkout with trust copy inline next to the pay button.
+6. **CONFIRMED — Dead-end orders.** `7-returns-&-Orders-page-from-top-bar-right-corner.png` reads
+   "0 orders placed" with no guidance → status **timeline** plus a cancel action that actually
+   restores stock.
+7. **CONFIRMED — Price confusion.** `Cart page.jpeg` mixes PKR (cart lines) with USD ("Customers who
+   viewed…" row) on the same page → **one currency** (ASSUMPTION: **USD**), integer cents, rendered
+   consistently server-side.
+
+### 7a. No surprises (theme)
+
+Every improvement above serves one rule: **the shopper never learns about a cost, a fee, or a failed
+state after committing.** Concretely — all of this is already in §4's business-rules table:
+
+- Effective price, shipping, tax and the order total are computed server-side and shown **before**
+  the pay button; no fee appears after payment.
+- Payment expires in 15 minutes and says so; the order exists only after the server verifies the
+  payment; stock + order + cart cleanup happen in **one** transaction, so a paid order can never fail
+  half-way.
+- Cancel is idempotent and restores stock; statuses (`placed → shipped → delivered` / `cancelled`)
+  render as a timeline, never a dead end.
+
+Where it lands: **Slice 2** (PDP shows the real cost context), **Slice 5** (cart shows the subtotal
+before checkout), **Slice 6** (checkout shows every cost before pay).
+
+### 7b. Not addressed (out of scope)
+
+- **Forwarder workaround** (owner pain #7, REPORTED): two-stage shipping via a package forwarder is
+  expensive, returns are hard, and local customs fall on the buyer. Not built — VENDRA ships only
+  what its own catalogue ships; real cross-border logistics are outside a demo storefront.
 
 ### 7.1 Your pain points
 
-*(Add your own below this line — leave §7.1 empty and the section still stands on the assumptions above.)*
+*(Short, plain wording. Labels: **REPORTED** = your sources, not personally tested; **CONFIRMED** =
+recon screenshot cited; **ASSUMPTION** = no evidence either way. Source titles as pasted are kept in
+`docs/research-notes.md`, not repeated here.)*
+
+1. **REPORTED — You find out too late that an item won't ship to Pakistan.** Many sellers don't ship
+   here at all, and "Ships to Pakistan" appears on only some search results while the rest say
+   nothing. Your sources even disagree with each other on whether Pakistan is supported — the
+   confusion itself is the pain. Not personally tested.
+2. **REPORTED — Shipping + import fees can nearly double the price.** Once shipping and an
+   import-fees deposit are added, the landed price roughly doubles. Our checkout screenshot
+   (`6-checkout-page-address-popup.png`) shows shipping & handling and estimated tax but **no
+   import-fees line**, so this stays REPORTED rather than CONFIRMED.
+3. **ASSUMPTION — The import-fee deposit rules are confusing.** The deposit is only an estimate: you
+   get the difference back if fees come in lower (up to 60 days) and aren't charged extra if they
+   come in higher — yet your sources also say customs is still charged on top, which contradicts the
+   terms themselves. Untested either way.
+4. **REPORTED — Pakistani cards get declined.** A Visa/Mastercard-style card is expected, Cash on
+   Delivery isn't offered, and guides suggest workarounds (NayaPay, bank card, Payoneer). Some
+   complaints you found came from non-Amazon services and weren't counted.
+5. **Sign-up OTP:**
+   - **5a CONFIRMED — Sign-up takes multiple verification steps before you can buy.** Puzzle → email
+     OTP → phone → WhatsApp, per `5-a-puzzle-after-account-creation.png`,
+     `5-email-verification-after-puzzle-correct-completion.png`,
+     `5-phone-verification-occurs-after-email-verification.png`,
+     `5-mobile-phone-verfication-using-whatsapp.png`.
+   - **5b REPORTED — The +92 OTP reportedly never arrives.** Forum reports (mostly seller accounts)
+     say Pakistani numbers get no code; no country block is admitted and no workaround is confirmed.
+     Buyer side untested.
+
+*PKR/USD mixing and address format — no solid source discussion was found; to be written from my own
+experience only.*
 
 ## 8. Open questions
 

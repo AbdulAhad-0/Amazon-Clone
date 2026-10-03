@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { signOut } from "@/app/(account)/actions";
 
 interface AccountMenuProps {
@@ -11,6 +12,8 @@ interface AccountMenuProps {
 export function AccountMenu({ displayName }: AccountMenuProps) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
 
   useEffect(() => {
     if (!open) return;
@@ -60,14 +63,21 @@ export function AccountMenu({ displayName }: AccountMenuProps) {
           >
             Account
           </span>
-          <form action={signOut}>
-            <button
-              className="w-full px-4 py-2 text-left text-sm font-semibold text-accent hover:bg-paper focus:outline-2 focus:outline-accent"
-              type="submit"
-            >
-              Sign out
-            </button>
-          </form>
+          <button
+            className="w-full px-4 py-2 text-left text-sm font-semibold text-accent hover:bg-paper focus:outline-2 focus:outline-accent disabled:opacity-60"
+            disabled={pending}
+            onClick={() => {
+              setOpen(false);
+              startTransition(async () => {
+                await signOut();
+                router.refresh();
+                router.replace("/");
+              });
+            }}
+            type="button"
+          >
+            {pending ? "Signing out…" : "Sign out"}
+          </button>
         </div>
       )}
     </div>

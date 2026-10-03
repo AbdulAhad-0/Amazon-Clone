@@ -92,8 +92,7 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
 export async function signOut(): Promise<void> {
   const supabase = await createBrowserClient();
   await supabase.auth.signOut();
-  // Same-URL redirect (/ already visited while signed in) must not serve the
-  // stale signed-in header from the router cache.
+  // Server cache only. The client clears its own router cache via
+  // router.refresh() + router.replace("/") after this action resolves.
   revalidatePath("/", "layout");
-  redirect("/");
 }

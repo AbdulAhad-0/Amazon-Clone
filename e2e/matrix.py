@@ -11,7 +11,7 @@ import urllib.request
 import uuid
 
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import expect, sync_playwright
 
 BASE = os.environ.get("E2E_BASE_URL", "http://localhost:3000")
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -217,6 +217,7 @@ with sync_playwright() as p:
         {"email": email, "password": pw, "email_confirm": True, "user_metadata": {}},
     )
     uid = (created.get("user") or created.get("id") or "") if isinstance(created, dict) else ""
+    su_uid = ""
 
     try:
         # sign-out state: header shows Sign in
@@ -234,6 +235,8 @@ with sync_playwright() as p:
         page.locator('form button[type="submit"]').click()
         page.wait_for_url("**/orders", timeout=15000)
         check("D3 sign-in returns to sent page (/orders)", page.url.startswith(BASE + "/orders"), page.url)
+        expect(page.get_by_role("button", name=f"Hello, {email.split('@')[0]}").first).to_be_visible(timeout=5000)
+        check("D3b header shows user right after sign-in (no manual refresh)", True)
 
         # open-redirect guard: next=//evil.com must land on /
         page.goto(f"{BASE}/signin?next=//evil.com", wait_until="domcontentloaded")
@@ -257,9 +260,8 @@ with sync_playwright() as p:
         # sign out from menu -> header flips, guard redirects again
         page.get_by_role("button", name=re.compile(r"^Hello,")).first.click()
         page.get_by_role("button", name="Sign out").click()
-        page.wait_for_function("() => location.pathname === '/'", timeout=15000)
-        page.wait_for_timeout(600)
-        check("D8 header back to Sign in after sign-out", page.get_by_role("link", name="Sign in").first.is_visible())
+        expect(page.get_by_role("link", name="Sign in").first).to_be_visible(timeout=5000)
+        check("D8 header back to Sign in after sign-out", True, page.url)
         rr = ctx.request.get(BASE + "/orders", max_redirects=0)
         check("D9 guard redirects again after sign-out", rr.status == 307, rr.status)
 
@@ -274,11 +276,13 @@ with sync_playwright() as p:
         page.fill("#auth-password", pw)
         page.locator('form button[type="submit"]').click()
         page.wait_for_function("() => location.pathname === '/'", timeout=15000)
-        page.wait_for_timeout(700)
+        expect(page.get_by_role("button", name=f"Hello, {su_name}").first).to_be_visible(timeout=5000)
         check(
             f"D10 sign-up with name -> header Hello, {su_name}",
-            page.get_by_role("button", name=f"Hello, {su_name}").count() == 1,
+            True,
+            page.url,
         )
+        check("D10b header shows user right after sign-up (no manual refresh)", True)
         page.screenshot(path=os.path.join(EV, "04-auth.png"))
         profiles = admin_rest(
             "GET", f"/rest/v1/profiles?display_name=eq.{urllib.parse.quote(su_name)}&select=display_name"

@@ -43,6 +43,10 @@ Slice 4 notes (2026-10-03): `profiles` + trigger + own-row RLS applied (0005); e
 
 Slice 5 session — Part 1 notes (2026-10-03): seed cleanup — the one Amazon-named product (`amazon-echo-plus`) removed from `data/seed-products.json`; `npm run seed` → `deleted products=1`, `categories=22 products=183 images=422`; `npm run verify-seed` → `verify-seed: OK` (expectations 184→183, `fetch-seed.ts` now excludes `/amazon/i`); ADR-021 gained the follow-up line. **Next action:** Part 2 — Slice 5 cart (guest + merge, RLS, /cart page).
 
+Slice 5 session — Part 2 notes (2026-10-03): cart built — `0006_cart.sql` (`cart_items` + `cart_merges` + own-row RLS) pasted by owner, verified **8/8** by `tests/cart_rls.test.ts`; guest cart lives in `vendra.cart` as plain `[{productId, qty}]` with an in-memory `pendingMergeId`, merge is idempotent via `cart_merges` upsert `ignoreDuplicates` (double-run → `alreadyMerged`, no qty change), storage cleared only after the server confirms; **pricing split into pure `lib/pricing.ts`** (re-exported from `lib/shop.ts`) so client components never pull `cookies()` into the browser bundle (build error caught at Phase 2); money always server-computed, optimistic qty only, `revalidatePath("/", "layout")` after mutations so the header badge refreshes.
+
+Part 2 verification: typecheck 0, vitest **67/67** (8 files), build clean, e2e **66/66** (47 legacy + 19 new Phase F: guest add→toast+badge, stepper qty 2, server summary + free-ship line, checkout→signin with `next=/checkout`, remove→empty state, sign-in merge clears storage, signed-in add persists across reload, qty survives reload, 390 cart no horizontal scroll, sign-out cleanup). **Real bug found by e2e:** `CartLineRow`'s image `<Link>` lacked `relative`, so `ProductImage`'s `fill` img escaped its clip and intercepted stepper clicks — fixed with `relative block`. Screenshots `docs/evidence/05-cart.png` / `05-cart-mobile.png`. **Next action:** Part 3 — category pages.
+
 ## Open items
 
 - **OPEN QUESTION** pain points: ~~owner to add own entries to `spec.md` §7.1~~ — owner's pain points

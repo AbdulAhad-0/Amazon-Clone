@@ -45,9 +45,9 @@ function Rail({ title, href, items, signedIn }: RailProps) {
           See all →
         </Link>
       </div>
-      <div className="flex gap-4 overflow-x-auto pb-2">
+      <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {items.map((product) => (
-          <div className="w-44 shrink-0" key={product.slug}>
+          <div className="h-full w-44 shrink-0 snap-start" key={product.slug}>
             <ProductCard product={product} signedIn={signedIn} />
           </div>
         ))}
@@ -67,7 +67,7 @@ export default async function HomePage() {
       {/* Typographic hero */}
       <header className="mb-8 rounded-3xl border border-line bg-paper px-6 py-12 sm:px-10 sm:py-16">
         <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-accent">Vendra</p>
-        <h1 className="max-w-2xl font-display text-4xl font-semibold leading-tight text-ink sm:text-5xl">
+        <h1 className="max-w-2xl font-display text-4xl font-semibold leading-tight text-ink [text-wrap:balance] sm:text-5xl">
           What you see is what you pay.
         </h1>
         <p className="mt-4 max-w-prose text-ink-muted">

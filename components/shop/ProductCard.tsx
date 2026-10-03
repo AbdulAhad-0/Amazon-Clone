@@ -11,10 +11,12 @@ interface ProductCardProps {
   signedIn?: boolean;
 }
 
+// Fixed-layout card: equal height everywhere. Reserved brand line, 2-line
+// title min-height, fixed rating row, price + action pinned via mt-auto.
 export function ProductCard({ product, signedIn = false }: ProductCardProps) {
   const effective = effectivePriceCents(product.priceCents, product.discountPct);
   return (
-    <div className="flex flex-col rounded-2xl border border-line bg-paper p-3 transition-shadow hover:shadow-md focus-within:outline-2 focus-within:outline-accent">
+    <div className="flex h-full flex-col rounded-2xl border border-line bg-paper p-3 transition-shadow hover:shadow-md focus-within:outline-2 focus-within:outline-accent">
       <Link
         className="flex flex-col focus:outline-2 focus:outline-accent"
         href={`/p/${product.slug}`}
@@ -27,27 +29,31 @@ export function ProductCard({ product, signedIn = false }: ProductCardProps) {
           )}
           <ProductImage alt={product.title} src={product.image} title={product.title} />
         </div>
-        {product.brand && <p className="mt-2 text-xs text-ink-muted">{product.brand}</p>}
-        <span className="mt-1 line-clamp-2 text-sm text-ink">{product.title}</span>
-        <RatingStars avg={product.ratingAvg} count={product.ratingCount} />
-        <span className="mt-1 font-semibold text-ink">
+        <p className="mt-2 min-h-4 text-xs text-ink-muted">{product.brand || "\u00A0"}</p>
+        <span className="mt-1 line-clamp-2 min-h-10 text-sm text-ink">{product.title}</span>
+        <span className="mt-1 flex h-5 items-center">
+          <RatingStars avg={product.ratingAvg} count={product.ratingCount} />
+        </span>
+      </Link>
+      <div className="mt-auto pt-2">
+        <p className="font-semibold text-ink">
           {formatCents(effective)}
           {product.discountPct > 0 && (
             <s className="ml-2 text-xs font-normal text-ink-muted">
               {formatCents(product.priceCents)}
             </s>
           )}
-        </span>
-      </Link>
-      <div className="mt-2">
-        <AddToCartButton
-          compact
-          productId={product.id}
-          qty={1}
-          signedIn={signedIn}
-          slug={product.slug}
-          stock={product.stock}
-        />
+        </p>
+        <div className="mt-2">
+          <AddToCartButton
+            compact
+            productId={product.id}
+            qty={1}
+            signedIn={signedIn}
+            slug={product.slug}
+            stock={product.stock}
+          />
+        </div>
       </div>
     </div>
   );

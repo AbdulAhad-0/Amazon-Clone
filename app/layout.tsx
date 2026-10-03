@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
+import { getUser } from "@/lib/supabase/getUser";
 
 import "./globals.css";
 
@@ -23,11 +24,12 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  const user = await getUser();
   return (
     <html className={`${fraunces.variable} ${inter.variable}`} lang="en">
       <body className="flex min-h-screen flex-col antialiased">
-        <Header />
+        <Header user={user} />
         <main className="flex-1">{children}</main>
         <Footer />
       </body>

@@ -1,9 +1,11 @@
 import { NavGroupGrid } from "@/components/shop/NavGroupGrid";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { getHomeData } from "@/lib/shop";
+import { getUser } from "@/lib/supabase/getUser";
 
 export default async function HomePage() {
   const { groupTiles, popular } = await getHomeData();
+  const user = await getUser();
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
@@ -34,7 +36,7 @@ export default async function HomePage() {
         ) : (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             {popular.map((product) => (
-              <ProductCard key={product.slug} product={product} />
+              <ProductCard key={product.slug} product={product} signedIn={user !== null} />
             ))}
           </div>
         )}

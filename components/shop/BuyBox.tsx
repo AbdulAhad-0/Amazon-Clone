@@ -1,17 +1,21 @@
+import Link from "next/link";
 import { costBreakdown, type CostBreakdown } from "@/lib/shop";
 import { formatCents } from "@/lib/money";
+import { AddToCartButton } from "./AddToCartButton";
 
 interface BuyBoxProps {
+  productId: string;
   slug: string;
   priceCents: number;
   discountPct: number;
   stock: number;
   qty: number;
+  signedIn: boolean;
 }
 
 // Server component: qty changes via GET form → searchParams → this re-renders
 // with costBreakdown() recomputed server-side (ADR-004: no client-side math).
-export function BuyBox({ slug, priceCents, discountPct, stock, qty }: BuyBoxProps) {
+export function BuyBox({ productId, slug, priceCents, discountPct, stock, qty, signedIn }: BuyBoxProps) {
   const outOfStock = stock === 0;
   const maxQty = outOfStock ? 1 : Math.min(stock, 10);
   const cost: CostBreakdown = costBreakdown(priceCents, discountPct, qty);
@@ -70,14 +74,31 @@ export function BuyBox({ slug, priceCents, discountPct, stock, qty }: BuyBoxProp
       </form>
 
       <div>
-        <button
-          className="w-full rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white hover:opacity-90 focus:outline-2 focus:outline-accent disabled:cursor-not-allowed disabled:opacity-50"
-          disabled={outOfStock}
-          type="button"
-        >
-          Add to cart
-        </button>
-        <p className="mt-2 text-xs text-ink-muted">Cart arrives in a later slice — nothing is added yet.</p>
+        <AddToCartButton
+          productId={productId}
+          qty={qty}
+          signedIn={signedIn}
+          slug={slug}
+          stock={stock}
+        />
+        {outOfStock ? (
+          <span
+            aria-disabled="true"
+            className="mt-3 block w-full cursor-not-allowed rounded-full border border-line bg-white px-6 py-3 text-center text-sm font-semibold text-ink-muted/60"
+          >
+            Buy now
+          </span>
+        ) : (
+          <Link
+            className="mt-3 block w-full rounded-full border border-line bg-white px-6 py-3 text-center text-sm font-semibold text-ink hover:border-accent hover:text-accent focus:outline-2 focus:outline-accent"
+            href={signedIn ? "/checkout" : "/signin?next=/checkout"}
+          >
+            Buy now
+          </Link>
+        )}
+        <p className="mt-2 text-xs text-ink-muted">
+          Review quantities and totals on the cart page before checkout.
+        </p>
       </div>
 
       <div className="rounded-2xl border border-line bg-paper p-4">

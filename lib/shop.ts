@@ -1,47 +1,22 @@
 import { createClient } from "@/lib/supabase/server";
 
 // ---- server-side pricing (spec §4 business rules, ADR-004/016) ----
-
-export function effectivePriceCents(priceCents: number, discountPct: number | null): number {
-  const d = discountPct ?? 0;
-  return Math.floor((priceCents * (100 - d)) / 100);
-}
-
-export function shippingCents(subtotalCents: number): number {
-  return subtotalCents >= 3500 ? 0 : 599;
-}
-
-export function taxCents(subtotalCents: number): number {
-  return Math.round((subtotalCents * 8) / 100);
-}
-
-export interface CostBreakdown {
-  qty: number;
-  unitEffectiveCents: number;
-  itemCents: number;
-  shippingCents: number;
-  taxCents: number;
-  totalCents: number;
-}
-
-export function costBreakdown(priceCents: number, discountPct: number | null, qty: number): CostBreakdown {
-  const unit = effectivePriceCents(priceCents, discountPct);
-  const item = unit * qty;
-  const shipping = shippingCents(item);
-  const tax = taxCents(item);
-  return {
-    qty,
-    unitEffectiveCents: unit,
-    itemCents: item,
-    shippingCents: shipping,
-    taxCents: tax,
-    totalCents: item + shipping + tax,
-  };
-}
+// Definitions live in lib/pricing.ts (pure module — no Supabase/Next imports,
+// so client components can import pricing helpers without pulling cookies());
+// re-exported here so server code keeps one import surface.
+export {
+  FREE_SHIPPING_CENTS,
+  costBreakdown,
+  effectivePriceCents,
+  shippingCents,
+  taxCents,
+  type CostBreakdown,
+} from "@/lib/pricing";
 
 // ---- shared query shapes ----
 
 export interface ProductCardData {
+  id: string;
   slug: string;
   title: string;
   brand: string | null;
@@ -49,6 +24,7 @@ export interface ProductCardData {
   discountPct: number;
   ratingAvg: number;
   ratingCount: number;
+  stock: number;
   image: string;
 }
 
@@ -82,7 +58,7 @@ export async function getHomeData(): Promise<{ groupTiles: GroupTileData[]; popu
 
   const popRes = await supabase
     .from("products")
-    .select("slug, title, brand, price_cents, discount_pct, rating_avg, rating_count, product_images(url, position)")
+    .select("id, slug, title, brand, price_cents, discount_pct, rating_avg, rating_count, stock, product_images(url, position)")
     .order("rating_avg", { ascending: false })
     .order("slug", { ascending: true })
     .limit(8);
@@ -115,6 +91,7 @@ export async function getHomeData(): Promise<{ groupTiles: GroupTileData[]; popu
     });
 
   type PopRow = {
+    id: string;
     slug: string;
     title: string;
     brand: string | null;
@@ -122,9 +99,11 @@ export async function getHomeData(): Promise<{ groupTiles: GroupTileData[]; popu
     discount_pct: number;
     rating_avg: number;
     rating_count: number;
+    stock: number;
     product_images: { url: string; position: number }[] | null;
   };
   const popular: ProductCardData[] = ((popRes.data ?? []) as PopRow[]).map((p) => ({
+    id: p.id,
     slug: p.slug,
     title: p.title,
     brand: p.brand,
@@ -132,6 +111,7 @@ export async function getHomeData(): Promise<{ groupTiles: GroupTileData[]; popu
     discountPct: p.discount_pct,
     ratingAvg: Number(p.rating_avg),
     ratingCount: p.rating_count,
+    stock: p.stock,
     image: firstImage(p.product_images),
   }));
 
@@ -172,7 +152,7 @@ export async function getCategoryPage(slug: string, page: number): Promise<Categ
   const listRes = await supabase
     .from("products")
     .select(
-      "slug, title, brand, price_cents, discount_pct, rating_avg, rating_count, categories!inner(nav_group_id), product_images(url, position)",
+      "id, slug, title, brand, price_cents, discount_pct, rating_avg, rating_count, stock, categories!inner(nav_group_id), product_images(url, position)",
     )
     .eq("categories.nav_group_id", group.id)
     .order("rating_avg", { ascending: false })
@@ -181,6 +161,7 @@ export async function getCategoryPage(slug: string, page: number): Promise<Categ
   if (listRes.error) throw new Error(`category products: ${listRes.error.message}`);
 
   type CatRow = {
+    id: string;
     slug: string;
     title: string;
     brand: string | null;
@@ -188,9 +169,11 @@ export async function getCategoryPage(slug: string, page: number): Promise<Categ
     discount_pct: number;
     rating_avg: number;
     rating_count: number;
+    stock: number;
     product_images: { url: string; position: number }[] | null;
   };
   const products: ProductCardData[] = ((listRes.data ?? []) as CatRow[]).map((p) => ({
+    id: p.id,
     slug: p.slug,
     title: p.title,
     brand: p.brand,
@@ -198,6 +181,7 @@ export async function getCategoryPage(slug: string, page: number): Promise<Categ
     discountPct: p.discount_pct,
     ratingAvg: Number(p.rating_avg),
     ratingCount: p.rating_count,
+    stock: p.stock,
     image: firstImage(p.product_images),
   }));
 
@@ -265,7 +249,7 @@ export async function getProductDetail(slug: string): Promise<ProductDetailData 
   const relRes = await supabase
     .from("products")
     .select(
-      "slug, title, brand, price_cents, discount_pct, rating_avg, rating_count, categories!inner(nav_group_id), product_images(url, position)",
+      "id, slug, title, brand, price_cents, discount_pct, rating_avg, rating_count, stock, categories!inner(nav_group_id), product_images(url, position)",
     )
     .eq("categories.nav_group_id", p.categories.nav_group_id)
     .neq("slug", p.slug)
@@ -275,6 +259,7 @@ export async function getProductDetail(slug: string): Promise<ProductDetailData 
   if (relRes.error) throw new Error(`related: ${relRes.error.message}`);
 
   type RelRow = {
+    id: string;
     slug: string;
     title: string;
     brand: string | null;
@@ -282,9 +267,11 @@ export async function getProductDetail(slug: string): Promise<ProductDetailData 
     discount_pct: number;
     rating_avg: number;
     rating_count: number;
+    stock: number;
     product_images: { url: string; position: number }[] | null;
   };
   const related: ProductCardData[] = ((relRes.data ?? []) as RelRow[]).map((r) => ({
+    id: r.id,
     slug: r.slug,
     title: r.title,
     brand: r.brand,
@@ -292,6 +279,7 @@ export async function getProductDetail(slug: string): Promise<ProductDetailData 
     discountPct: r.discount_pct,
     ratingAvg: Number(r.rating_avg),
     ratingCount: r.rating_count,
+    stock: r.stock,
     image: firstImage(r.product_images),
   }));
 

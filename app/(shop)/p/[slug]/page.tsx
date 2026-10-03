@@ -6,6 +6,7 @@ import { Gallery } from "@/components/shop/Gallery";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { RatingStars } from "@/components/shop/RatingStars";
 import { getProductDetail } from "@/lib/shop";
+import { getUser } from "@/lib/supabase/getUser";
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
@@ -24,6 +25,8 @@ export default async function ProductPage({ params, searchParams }: ProductPageP
 
   const detail = await getProductDetail(slug);
   if (!detail) notFound();
+
+  const user = await getUser();
 
   const maxQty = detail.stock > 0 ? Math.min(detail.stock, 10) : 1;
   const requested = Number.parseInt(sp.qty ?? "1", 10) || 1;
@@ -55,7 +58,9 @@ export default async function ProductPage({ params, searchParams }: ProductPageP
             <BuyBox
               discountPct={detail.discountPct}
               priceCents={detail.priceCents}
+              productId={detail.id}
               qty={qty}
+              signedIn={user !== null}
               slug={detail.slug}
               stock={detail.stock}
             />
@@ -75,7 +80,7 @@ export default async function ProductPage({ params, searchParams }: ProductPageP
           <h2 className="mb-4 font-display text-xl font-semibold text-ink">Related products</h2>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             {detail.related.map((product) => (
-              <ProductCard key={product.slug} product={product} />
+              <ProductCard key={product.slug} product={product} signedIn={user !== null} />
             ))}
           </div>
         </section>

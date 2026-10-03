@@ -145,6 +145,7 @@ interface ImageRow {
 }
 
 interface ProductRow {
+  id: string;
   slug: string;
   title: string;
   brand: string | null;
@@ -152,6 +153,7 @@ interface ProductRow {
   discount_pct: number;
   rating_avg: number;
   rating_count: number;
+  stock: number;
   product_images: ImageRow[] | null;
 }
 
@@ -178,8 +180,8 @@ export async function applyFilters(qb: SupabaseClient, raw: SearchParams): Promi
   }
 
   const select = navGroupId !== undefined
-    ? "slug, title, brand, price_cents, discount_pct, rating_avg, rating_count, product_images(url, position), categories!inner(nav_group_id)"
-    : "slug, title, brand, price_cents, discount_pct, rating_avg, rating_count, product_images(url, position)";
+    ? "id, slug, title, brand, price_cents, discount_pct, rating_avg, rating_count, stock, product_images(url, position), categories!inner(nav_group_id)"
+    : "id, slug, title, brand, price_cents, discount_pct, rating_avg, rating_count, stock, product_images(url, position)";
 
   let query = qb.from("products").select(select, { count: "exact" });
   if (navGroupId !== undefined) query = query.eq("categories.nav_group_id", navGroupId);
@@ -196,6 +198,7 @@ export async function applyFilters(qb: SupabaseClient, raw: SearchParams): Promi
   if (res.error) throw new Error(`search: ${res.error.message}`);
 
   const items: ProductCardData[] = ((res.data ?? []) as unknown as ProductRow[]).map((row) => ({
+    id: row.id,
     slug: row.slug,
     title: row.title,
     brand: row.brand,
@@ -203,6 +206,7 @@ export async function applyFilters(qb: SupabaseClient, raw: SearchParams): Promi
     discountPct: row.discount_pct,
     ratingAvg: Number(row.rating_avg),
     ratingCount: row.rating_count,
+    stock: row.stock,
     image: firstImage(row.product_images),
   }));
 

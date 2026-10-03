@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { getCategoryPage } from "@/lib/shop";
+import { getUser } from "@/lib/supabase/getUser";
 
 interface CategoryPageProps {
   params: Promise<{ group: string }>;
@@ -15,6 +16,8 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
 
   const data = await getCategoryPage(group, page);
   if (!data) notFound();
+
+  const user = await getUser();
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
@@ -50,7 +53,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
           {data.products.map((product) => (
-            <ProductCard key={product.slug} product={product} />
+            <ProductCard key={product.slug} product={product} signedIn={user !== null} />
           ))}
         </div>
       )}

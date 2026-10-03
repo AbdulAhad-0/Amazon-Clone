@@ -323,6 +323,143 @@ with sync_playwright() as p:
                     hits.append(f)
     check("E1 no SERVICE_ROLE in client bundle", not hits, hits)
 
+    # ---------- Phase F: cart (guest, signed-in, merge) ----------
+    page.set_viewport_size({"width": 1280, "height": 900})
+
+    def open_instock_pdp(hrefs):
+        for href in hrefs[:6]:
+            page.goto(BASE + href, wait_until="domcontentloaded")
+            page.wait_for_timeout(600)
+            btn = page.get_by_role("button", name="Add to cart").first
+            if btn.count() >= 1 and btn.is_enabled() and "Out of stock" not in btn.inner_text():
+                return href
+        return None
+
+    cart_uid = ""
+    try:
+        page.goto(f"{BASE}/", wait_until="domcontentloaded")
+        page.wait_for_timeout(800)
+        pdps = list(dict.fromkeys(
+            page.eval_on_selector_all('a[href^="/p/"]', "els => els.map(e => e.getAttribute('href'))")
+        ))
+        check("F0 home links to product pages", len(pdps) >= 2, f"pdps={len(pdps)}")
+        pdp_a = open_instock_pdp(pdps)
+        check("F0b found an in-stock product", bool(pdp_a), pdp_a)
+
+        # F1 guest add from PDP -> toast + badge
+        page.get_by_role("button", name="Add to cart").first.click()
+        expect(page.get_by_role("link", name="View cart").first).to_be_visible(timeout=5000)
+        check("F1 guest add shows 'Added - View cart' toast", True)
+        expect(page.get_by_label(re.compile(r"^Cart, \d+ items?$")).first).to_be_visible(timeout=5000)
+        check("F1b guest cart badge appears", True)
+
+        # F2 guest cart: line, stepper, server summary
+        page.goto(f"{BASE}/cart", wait_until="domcontentloaded")
+        page.wait_for_timeout(1200)
+        check("F2 guest cart shows the line", page.get_by_role("button", name="Remove").count() == 1)
+        page.get_by_role("button", name=re.compile("^Increase quantity")).first.click()
+        page.wait_for_timeout(1200)
+        qty = page.locator('div[aria-label^="Quantity for"] span').first.inner_text()
+        check("F2b guest stepper bumps qty to 2", qty.strip() == "2", qty)
+        summary_ok = (
+            page.get_by_text("Order summary").count() >= 1
+            and page.get_by_text(re.compile(r"free shipping", re.I)).count() >= 1
+        )
+        check("F2c server summary + free-ship line shown", summary_ok)
+
+        # F4 guest Checkout requires sign-in, next preserved
+        page.get_by_role("link", name="Checkout").first.click()
+        page.wait_for_url("**/signin**", timeout=8000)
+        check("F4 guest checkout -> signin", "/signin" in page.url, page.url)
+        check("F4b next preserved as /checkout", page.locator('input[name="next"]').input_value() == "/checkout")
+
+        # F3 remove -> empty state
+        page.goto(f"{BASE}/cart", wait_until="domcontentloaded")
+        page.wait_for_timeout(1000)
+        page.get_by_role("button", name="Remove").first.click()
+        page.wait_for_timeout(1200)
+        check("F3 remove empties the guest cart", page.get_by_text("Your cart is empty").is_visible())
+
+        # F5 guest add, sign in -> idempotent merge, storage cleared
+        page.goto(BASE + pdp_a, wait_until="domcontentloaded")
+        page.wait_for_timeout(600)
+        page.get_by_role("button", name="Add to cart").first.click()
+        expect(page.get_by_label(re.compile(r"^Cart, \d+ items?$")).first).to_be_visible(timeout=5000)
+
+        pdp_b = None
+        for h in pdps:
+            if h != pdp_a and open_instock_pdp([h]):
+                pdp_b = h
+                break
+        check("F5a second in-stock product found", bool(pdp_b), pdp_b)
+        page.goto(BASE + pdp_a, wait_until="domcontentloaded")
+        page.wait_for_timeout(400)
+
+        cart_email = f"e2e-cart-{uuid.uuid4().hex[:8]}@example.com"
+        pw = "E2e-Cart-Passw0rd!1"
+        created = admin_rest(
+            "POST",
+            "/auth/v1/admin/users",
+            {"email": cart_email, "password": pw, "email_confirm": True, "user_metadata": {}},
+        )
+        cart_uid = (created.get("user") or created.get("id") or "") if isinstance(created, dict) else ""
+        page.goto(f"{BASE}/signin", wait_until="domcontentloaded")
+        page.wait_for_timeout(500)
+        page.fill("#auth-email", cart_email)
+        page.fill("#auth-password", pw)
+        page.locator('form button[type="submit"]').click()
+        page.wait_for_function("() => location.pathname === '/'", timeout=15000)
+        expect(page.get_by_role("button", name=re.compile(r"^Hello,")).first).to_be_visible(timeout=5000)
+        page.wait_for_function(
+            "() => { const v = localStorage.getItem('vendra.cart'); return v === null || v === '[]'; }",
+            timeout=10000,
+        )
+        check("F5 merge clears guest storage after server confirms", True)
+        page.goto(f"{BASE}/cart", wait_until="domcontentloaded")
+        expect(page.get_by_role("button", name="Remove").first).to_be_visible(timeout=10000)
+        check("F5c merged line visible in signed-in cart", True)
+        ls = page.evaluate("() => localStorage.getItem('vendra.cart')")
+        check("F5d localStorage stays empty", ls in (None, "[]"), ls)
+
+        # F6 signed-in add + reload persistence
+        page.goto(BASE + pdp_b, wait_until="domcontentloaded")
+        page.wait_for_timeout(600)
+        page.get_by_role("button", name="Add to cart").first.click()
+        expect(page.get_by_label("Cart, 2 items").first).to_be_visible(timeout=8000)
+        check("F6 signed-in add updates server badge to 2", True)
+        page.goto(f"{BASE}/cart", wait_until="domcontentloaded")
+        expect(page.get_by_role("button", name="Remove").first).to_be_visible(timeout=8000)
+        check("F6b cart has 2 lines after reload (persistence)", page.get_by_role("button", name="Remove").count() == 2)
+        page.screenshot(path=os.path.join(EV, "05-cart.png"), full_page=True)
+
+        page.get_by_role("button", name=re.compile("^Increase quantity")).first.click()
+        page.wait_for_timeout(1200)
+        page.reload(wait_until="domcontentloaded")
+        page.wait_for_timeout(1000)
+        qty2 = page.locator('div[aria-label^="Quantity for"] span').first.inner_text()
+        check("F6c qty change survives reload", qty2.strip() == "2", qty2)
+
+        # F8 mobile 390: cart, no horizontal scroll
+        page.set_viewport_size({"width": 390, "height": 844})
+        page.goto(f"{BASE}/cart", wait_until="domcontentloaded")
+        page.wait_for_timeout(1000)
+        sw = page.evaluate("() => document.documentElement.scrollWidth")
+        check("F8 cart at 390: no horizontal scroll", sw <= 391, f"scrollWidth={sw}")
+        page.screenshot(path=os.path.join(EV, "05-cart-mobile.png"), full_page=True)
+        page.set_viewport_size({"width": 1280, "height": 900})
+
+        # sign out so later phases/screenshots see a clean guest header
+        page.get_by_role("button", name=re.compile(r"^Hello,")).first.click()
+        page.get_by_role("button", name="Sign out").click()
+        expect(page.get_by_role("link", name="Sign in").first).to_be_visible(timeout=5000)
+        check("F9 sign out completes cart phase", True)
+    finally:
+        if cart_uid:
+            try:
+                admin_rest("DELETE", f"/auth/v1/admin/users/{cart_uid}")
+            except Exception:
+                pass
+
     browser.close()
 
 fails = [r for r in results if r[0] == "FAIL"]

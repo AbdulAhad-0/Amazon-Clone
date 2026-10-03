@@ -5,6 +5,7 @@ import { FilterSheet } from "@/components/shop/FilterSheet";
 import { ProductGrid } from "@/components/shop/ProductGrid";
 import { applyFilters, parseSearchParams, type SearchParams } from "@/lib/search";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/supabase/getUser";
 
 interface SearchPageProps {
   searchParams: Promise<SearchParams>;
@@ -15,6 +16,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const parsed = parseSearchParams(raw);
   const supabase = await createClient();
   const { items, total, brands } = await applyFilters(supabase, raw);
+  const user = await getUser();
 
   const groupsRes = await supabase.from("nav_groups").select("slug, name").order("sort_order");
   if (groupsRes.error) throw new Error(`nav_groups: ${groupsRes.error.message}`);
@@ -70,7 +72,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
               </Link>
             </div>
           ) : (
-            <ProductGrid items={items} />
+            <ProductGrid items={items} signedIn={user !== null} />
           )}
         </div>
       </div>

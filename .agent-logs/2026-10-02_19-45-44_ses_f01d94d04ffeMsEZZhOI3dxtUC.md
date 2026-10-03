@@ -5,9 +5,9 @@ author: Abdulahad-0
 model: opencode/mimo-v2.6-flash-free
 tool: opencode
 project: amazon-clone
-total_exchanges: 37
+total_exchanges: 38
 first_prompt_time: 2026-10-02T19:45:44.242Z
-last_prompt_time: 2026-10-03T13:21:35.506Z
+last_prompt_time: 2026-10-03T13:28:03.835Z
 ---
 
 # Session Log - 2026-10-02
@@ -1856,3 +1856,84 @@ Yes, run it once more, with this prep:
 1. Kill every node/next process, confirm port 3000 is free, delete .next, run npm run build, then npm run e2e (one server only).
 2. If the /search?q=men's navigation times out again, do not rerun. Report: how long a single direct request to that URL takes (measure it once), and whether the server log shows an error. Facts only.
 3. If e2e passes: confirm D8, D3b and D10b results from the real output, mark Slice 4 DONE with the command output, update progress.md (2-3 lines, date, Next action), commit code, docs and logs separately. Do not push. Report the time taken. 
+
+
+[LOG_ENTRY type=RESPONSE num=37 session=ses_f01d]
+timestamp: 2026-10-03T13:25:02.639Z
+model: opencode/mimo-v2.6-flash-free
+
+**47/47 pass** — D8, D3b, D10b all OK. Updating docs and committing:
+
+## Slice 4 DONE — e2e **47/47**
+
+**Real output (final check lines):**
+```
+[OK]  D3b header shows user right after sign-in (no manual refresh)
+[OK]  D8 header back to Sign in after sign-out  (http://localhost:3000/)
+[OK]  D10b header shows user shows user right after sign-up (no manual refresh)
+==== SUMMARY ====  total=47 pass=47 fail=0
+```
+(D3b/D10b exact as printed: `D3b header shows user right after sign-in (no manual refresh)`, `D10b header shows user right after sign-up (no manual refresh)` — both green.)
+
+**Which option worked:** **Option 1** — sign-out button calls the action, then `router.refresh()` + `router.replace("/")`. Hard navigation was not needed.
+
+**Prep done as ordered:** killed all node processes (incl. 2 non-app MCP nodes), port 3000 confirmed free, `.next` deleted, clean `npm run build` (exit 0, all routes `ƒ` dynamic), single server via `with_server.py`. The `/search?q=men's` timeout did **not** recur — A19 passed.
+
+**Docs:** progress.md Slice 4 row → **DONE (verified: … 47/47 …)** with D3b/D8/D10b cited; Slice 4 notes rewritten (2-3 lines + date + **Next action:** owner reviews `docs/evidence/04-*.png`, then start Slice 5 Cart).
+
+**Commits (separate, not pushed):**
+- `dc2babc fix: clear stale header after sign-out + per-request header session` (code + e2e)
+- `720e7ee docs: slice 4 DONE evidence + progress`
+- `ac19e1f logs: slice 4 session close`
+
+Working tree clean, port 3000 free. **Time taken: ~7 minutes** (18:17 → 18:24). 3 commits ahead of origin — not pushed. Ready for Slice 5.
+
+
+[LOG_ENTRY type=PROMPT num=38 session=ses_f01d]
+timestamp: 2026-10-03T13:28:03.835Z
+model: opencode/mimo-v2.6-flash-free
+
+SESSION: seed cleanup, Slice 5 (Cart, incl. guest cart + merge), category pages, home page. Read docs/progress.md first. If Slice 4 is not DONE with command output cited, STOP and tell me. Otherwise also read docs/plans/slice-5.md and the "No surprises" theme and business-rules sections of docs/spec.md. Use executing-plans inline, no subagents. Do not skip functionality, and do not lower the UI bar.
+
+ORDER OF WORK: Part 1, Part 2, Part 3, Part 4. After each part: commit it (code, docs, logs separately), add 2-3 lines to docs/progress.md, post a 5-line status, and continue to the next part without waiting, unless something failed. Do not push.
+
+PART 1 - Seed cleanup (small, do not spend more than a few minutes)
+Scan data/seed-products.json case-insensitively for "amazon" (title, brand, description). Our own branding must never use that name; a third-party product named after it still looks like a copy, so exclude those products from the seed (1-2 expected). Re-run npm run seed once, show real counts, update verify-seed, add one line to ADR-021 with the new counts.
+
+PART 2 - Slice 5 Cart, guest cart and merge included (not cut)
+1. Guest cart: localStorage holds only { productId, qty }. Never store or trust prices on the client; guest cart UI fetches current price, stock and status from the server by ids.
+2. Parse defensively: malformed or tampered JSON becomes an empty cart without throwing; qty clamped to 1..min(stock,30); unknown or removed products dropped with a notice.
+3. Header cart badge works for guests and signed-in users and syncs across tabs.
+4. Merge on sign-in: one idempotent server action (qty added to existing, capped at stock and 30). Clear localStorage only after the server confirms. Test a double run.
+5. Signed-in cart: cart_items under RLS, UNIQUE(user_id, product_id), stock check inside the server action, optimistic updates with rollback and a toast.
+6. /cart page: lines with image, title, unit price, qty stepper, remove, line total; summary box with subtotal, estimated shipping, estimated tax, total and free-shipping progress, all computed on the server (same business-rules constants). One primary "Checkout" button. Checkout and Buy now require sign-in and return the shopper with the cart intact. Add to cart anywhere shows a toast "Added - View cart".
+7. Write all migration .sql files first, tell me once which to paste in the SQL Editor, wait, then show real verification output. Tests first for RLS, merge, clamp, money.
+
+PART 3 - Category pages (/c/[group]) as a real browsing page
+1. Header band: group name, product count, one-line description.
+2. Sub-category chips (the categories inside this group, with counts, "All" first), state in the URL.
+3. Sort: Top rated (default), Price low to high, Price high to low, Newest, Biggest discount. Do NOT add a "Best sellers" label: we have no sales data and rating counts are not real. Note in docs/progress.md that a real "Best sellers" sort (units sold from order_items) is a task after Slice 6.
+4. Filters: brand, price range, rating, deals only. Desktop left rail, mobile bottom sheet, applied-filter chips with "Clear all", all in the URL. Reuse the Slice 3 query builder, search components and escaping with the group fixed; do not duplicate logic.
+5. On page 1 with no filters, a "Top rated in {group}" rail of 8 above the grid. 24 per page, pagination keeps the URL state. Cards show a Deal badge with the percentage.
+6. Empty, loading and error states; unknown group gives the branded not-found page.
+
+PART 4 - Home page upgrade (our own identity, nothing copied from other projects)
+1. Header present on the home page like every page. Footer with a real row of links to existing pages only, plus the demo notice.
+2. Hero: typographic, no gradient, no stock photo. Warm paper background, large serif headline, one primary "Browse" button, the "No surprises" promise (total shown before checkout).
+3. Trust strip with three facts from our real rules (total before checkout, free shipping over the threshold, cancel before it ships). Values come from the same constants as the business-rules table.
+4. Category tiles with group name and product count, only groups that have products.
+5. Rails from real fields: "Top rated" (seed_rating_avg desc, then id for stable order), "Deals" (discount_pct > 0), then one rail per group with 8 products and a "See all" link. Horizontal scroll on phones. No fake counts, no "3 ratings", no wishlist heart (wishlist is not built).
+6. Report the HTML size of / in KB; server-render the rails, lazy-load images below the fold.
+
+UI QUALITY BAR (applies to Parts 3 and 4 and every card):
+- Use the existing tokens only (indigo accent, paper background, serif display for headings, sans for UI). No hard-coded hex in components.
+- 8px spacing grid, one max content width, consistent section spacing; clear type scale (display, h2, h3, body, small); prices in a heavier weight than titles, list price struck through and muted, deal badge in the accent.
+- Product cards: square image box with object-contain on a white surface (fixed aspect ratio so CLS stays under 0.1), 1px line border, rounded corners, subtle hover lift and shadow, title clamped to 2 lines, the Add to cart button always reachable on touch.
+- Visible focus rings, keyboard use, sufficient contrast, prefers-reduced-motion respected, skeletons that match the real layout, empty states with a next action, friendly error states with a retry button, no raw server errors.
+- Check 1280 and 390 px for home, category, cart and product: no horizontal scroll, readable text, tap targets at least 44px.
+
+HOW TO WORK
+- Append checks to `npm run e2e` and run it once at the end (and once after Part 2). No throwaway probe scripts. Screenshots only for home, category, cart and product at 1280 and 390, saved to docs/evidence/.
+- Before every build: kill all node/next processes, never build while a server runs, one server at a time. If a check fails twice, STOP and report facts, no new theories.
+- If this session becomes slow, stop after the last finished part, commit, and tell me; I will continue in a new session from docs/progress.md.
+- At the end report: real command results, time taken per part, what cost the most time.  

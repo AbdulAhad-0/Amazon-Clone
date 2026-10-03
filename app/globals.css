@@ -1,4 +1,31 @@
-/* Base styles for the scaffold; brand tokens land in Task 2. */
+@import "tailwindcss";
+
+:root {
+  --accent: #3b3fa8;
+  --accent-hover: #32358f;
+  --paper: #faf8f4;
+  --surface: #ffffff;
+  --ink: #17181d;
+  --ink-muted: #5c5f6b;
+  --line: #e4e1da;
+  --danger: #b3261e;
+}
+
+@theme inline {
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-line: var(--line);
+  --color-danger: var(--danger);
+  --font-display: var(--font-fraunces);
+  --font-sans: var(--font-inter);
+}
+
 body {
-  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }

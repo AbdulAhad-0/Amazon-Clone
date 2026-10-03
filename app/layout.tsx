@@ -20,6 +20,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Vendra",
   description: "Vendra — demo storefront.",
+  robots: { index: false, follow: false },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

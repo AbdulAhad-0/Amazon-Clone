@@ -144,6 +144,47 @@ async function main() {
   });
   check((await db.from("product_images").insert(imageRows)).error, "product_images insert");
 
+  // Upsert never removes rows: delete anything not in the current seed.
+  // Safe pre-orders (ADR-021); FK order = products -> categories -> nav_groups.
+  const dbProd = await db.from("products").select("slug");
+  check(dbProd.error, "products select (delete phase)");
+  const seedSlugs = new Set(data.products.map((p) => p.slug));
+  const extraProd = (dbProd.data ?? [])
+    .map((r) => r.slug as string)
+    .filter((s) => !seedSlugs.has(s));
+  if (extraProd.length > 0)
+    check(
+      (await db.from("products").delete().in("slug", extraProd)).error,
+      "products delete (excluded)",
+    );
+
+  const dbCat = await db.from("categories").select("slug");
+  check(dbCat.error, "categories select (delete phase)");
+  const seedCat = new Set(data.categories.map((c) => c.slug));
+  const extraCat = (dbCat.data ?? [])
+    .map((r) => r.slug as string)
+    .filter((s) => !seedCat.has(s));
+  if (extraCat.length > 0)
+    check(
+      (await db.from("categories").delete().in("slug", extraCat)).error,
+      "categories delete (excluded)",
+    );
+
+  const dbNav = await db.from("nav_groups").select("slug");
+  check(dbNav.error, "nav_groups select (delete phase)");
+  const seedNav = new Set(data.navGroups.map((g) => g.slug));
+  const extraNav = (dbNav.data ?? [])
+    .map((r) => r.slug as string)
+    .filter((s) => !seedNav.has(s));
+  if (extraNav.length > 0)
+    check(
+      (await db.from("nav_groups").delete().in("slug", extraNav)).error,
+      "nav_groups delete (excluded)",
+    );
+  console.log(
+    `deleted products=${extraProd.length} categories=${extraCat.length} nav_groups=${extraNav.length}`,
+  );
+
   console.log(
     `categories=${data.categories.length} products=${data.products.length} images=${imageRows.length}`,
   );

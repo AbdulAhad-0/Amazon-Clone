@@ -2,8 +2,13 @@ import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { navGroups, categoryToNavGroup } from "../data/nav-groups";
 
-const EXPECTED_PRODUCTS = 194;
-const EXPECTED_CATEGORIES = 24;
+// Live source pins (verified 2026-10-03): DummyJSON total = 194 products /
+// 24 categories. Seed excludes vehicle+motorcycle (ADR-021) -> 184 / 22 / 7.
+const EXPECTED_SOURCE_PRODUCTS = 194;
+const EXPECTED_SOURCE_CATEGORIES = 24;
+const EXCLUDED_CATEGORIES = ["vehicle", "motorcycle"];
+const EXPECTED_SEED_PRODUCTS = 184;
+const EXPECTED_SEED_CATEGORIES = 22;
 
 function stop(msg: string): never {
   console.error(`STOP: ${msg}`);
@@ -36,32 +41,45 @@ async function main() {
   if (!catRes.ok) stop(`categories endpoint HTTP ${catRes.status}`);
   const sourceCats: { slug: string; name: string }[] = await catRes.json();
 
-  if (sourceCats.length !== EXPECTED_CATEGORIES)
-    stop(`categories=${sourceCats.length}, expected ${EXPECTED_CATEGORIES} — seed-products.json NOT written`);
+  if (sourceCats.length !== EXPECTED_SOURCE_CATEGORIES)
+    stop(`source categories=${sourceCats.length}, expected ${EXPECTED_SOURCE_CATEGORIES}`);
 
-  const unmapped = sourceCats
-    .map((c) => c.slug)
-    .filter((s) => !(s in categoryToNavGroup));
+  const sourceSlugs = sourceCats.map((c) => c.slug);
+  const staleExclusions = EXCLUDED_CATEGORIES.filter((s) => !sourceSlugs.includes(s));
+  if (staleExclusions.length)
+    stop(`excluded categories absent from source (stale list): ${staleExclusions.join(", ")}`);
+
+  const seedCats = sourceCats.filter((c) => !EXCLUDED_CATEGORIES.includes(c.slug));
+  if (seedCats.length !== EXPECTED_SEED_CATEGORIES)
+    stop(`seed categories=${seedCats.length}, expected ${EXPECTED_SEED_CATEGORIES}`);
+
+  const unmapped = seedCats.map((c) => c.slug).filter((s) => !(s in categoryToNavGroup));
   if (unmapped.length)
-    stop(`source categories missing from mapping: ${unmapped.join(", ")}`);
+    stop(`seed categories missing from mapping: ${unmapped.join(", ")}`);
 
-  const stale = Object.keys(categoryToNavGroup).filter(
-    (s) => !sourceCats.some((c) => c.slug === s),
-  );
-  if (stale.length)
-    stop(`mapping lists categories absent from source: ${stale.join(", ")}`);
+  const stale = Object.keys(categoryToNavGroup).filter((s) => !sourceSlugs.includes(s));
+  if (stale.length) stop(`mapping lists categories absent from source: ${stale.join(", ")}`);
+
+  const leaked = Object.keys(categoryToNavGroup).filter((s) => EXCLUDED_CATEGORIES.includes(s));
+  if (leaked.length) stop(`excluded categories must not be mapped: ${leaked.join(", ")}`);
 
   const prodRes = await fetch("https://dummyjson.com/products?limit=200");
   if (!prodRes.ok) stop(`products endpoint HTTP ${prodRes.status}`);
   const payload = await prodRes.json();
 
-  if (payload.total !== EXPECTED_PRODUCTS)
-    stop(`products total=${payload.total}, expected ${EXPECTED_PRODUCTS} — seed-products.json NOT written`);
+  if (payload.total !== EXPECTED_SOURCE_PRODUCTS)
+    stop(`source products total=${payload.total}, expected ${EXPECTED_SOURCE_PRODUCTS}`);
   if (payload.products.length !== payload.total)
     stop(`fetched ${payload.products.length} of total ${payload.total} (limit too low)`);
 
+  const keptSource = payload.products.filter(
+    (p: Record<string, unknown>) => String(p.category) in categoryToNavGroup,
+  );
+  if (keptSource.length !== EXPECTED_SEED_PRODUCTS)
+    stop(`seed products=${keptSource.length}, expected ${EXPECTED_SEED_PRODUCTS} (after exclusions)`);
+
   const seen = new Set<string>();
-  const products: SeedProductJson[] = payload.products.map((p: Record<string, unknown>) => {
+  const products: SeedProductJson[] = keptSource.map((p: Record<string, unknown>) => {
     let slug = slugify(String(p.title));
     if (seen.has(slug)) slug = `${slug}-${p.id}`;
     seen.add(slug);
@@ -94,7 +112,7 @@ async function main() {
   if (!products.every((p) => p.priceCents > 0))
     stop("priceCents <= 0 produced (products.price_cents check would reject)");
 
-  const categories = sourceCats.map((c, i) => ({
+  const categories = seedCats.map((c, i) => ({
     slug: c.slug,
     name: c.name,
     navGroupSlug: categoryToNavGroup[c.slug],
@@ -110,6 +128,9 @@ async function main() {
   const outFile = join(process.cwd(), "data", "seed-products.json");
   writeFileSync(outFile, JSON.stringify(out, null, 2));
   console.log(`written: ${outFile}`);
+  console.log(
+    `source products=${payload.total} source categories=${sourceCats.length} excluded=${EXCLUDED_CATEGORIES.join("+")}`,
+  );
   console.log(
     `products=${products.length} categories=${categories.length} navGroups=${navGroups.length} uniqueSlugs=${seen.size}`,
   );

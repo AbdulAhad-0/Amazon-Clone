@@ -63,10 +63,11 @@ async function main() {
   console.log(`nav ${(nav.data ?? []).map((r) => r.slug).join(" ")}`);
   console.log(`price_fn ${fn.data}`);
 
-  if (counts.products !== 194) fail(`products=${counts.products}, expected 194`);
-  if (counts.categories !== 24) fail(`categories=${counts.categories}, expected 24`);
-  if (counts.nav_groups !== 9) fail(`nav_groups=${counts.nav_groups}, expected 9`);
-  if (counts.product_images < 194) fail(`images=${counts.product_images}, expected >=194`);
+  if (counts.products !== 184) fail(`products=${counts.products}, expected 184 (ADR-021)`);
+  if (counts.categories !== 22) fail(`categories=${counts.categories}, expected 22 (ADR-021)`);
+  if (counts.nav_groups !== 7) fail(`nav_groups=${counts.nav_groups}, expected 7 (ADR-021)`);
+  if (counts.product_images < counts.products)
+    fail(`images=${counts.product_images}, expected >= products (${counts.products})`);
   if ((baseline.count ?? 0) < 1) fail("no product with seed_rating_count > 0");
   if ((withImages.count ?? -1) !== counts.products) fail("not every product has >=1 image");
   if (fn.data !== 500) fail(`effective_price_cents=${fn.data}, expected 500`);

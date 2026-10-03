@@ -32,6 +32,8 @@ export interface GroupTileData {
   slug: string;
   name: string;
   image: string;
+  /** Real product count in this nav group (no fake numbers, spec §4). */
+  count: number;
 }
 
 function firstImage(images: { url: string; position: number }[] | null | undefined): string {
@@ -41,7 +43,42 @@ function firstImage(images: { url: string; position: number }[] | null | undefin
 
 // ---- home ----
 
-export async function getHomeData(): Promise<{ groupTiles: GroupTileData[]; popular: ProductCardData[] }> {
+export interface HomeData {
+  groupTiles: GroupTileData[];
+  topRated: ProductCardData[];
+  deals: ProductCardData[];
+  groupRails: { slug: string; name: string; items: ProductCardData[] }[];
+}
+
+type CardRow = {
+  id: string;
+  slug: string;
+  title: string;
+  brand: string | null;
+  price_cents: number;
+  discount_pct: number;
+  rating_avg: number;
+  rating_count: number;
+  stock: number;
+  product_images: { url: string; position: number }[] | null;
+};
+
+function toCardData(p: CardRow): ProductCardData {
+  return {
+    id: p.id,
+    slug: p.slug,
+    title: p.title,
+    brand: p.brand,
+    priceCents: p.price_cents,
+    discountPct: p.discount_pct,
+    ratingAvg: Number(p.rating_avg),
+    ratingCount: p.rating_count,
+    stock: p.stock,
+    image: firstImage(p.product_images),
+  };
+}
+
+export async function getHomeData(): Promise<HomeData> {
   const supabase = await createClient();
 
   const groupsRes = await supabase
@@ -56,13 +93,31 @@ export async function getHomeData(): Promise<{ groupTiles: GroupTileData[]; popu
     .order("position");
   if (imgRes.error) throw new Error(`product_images: ${imgRes.error.message}`);
 
-  const popRes = await supabase
+  const topRes = await supabase
     .from("products")
     .select("id, slug, title, brand, price_cents, discount_pct, rating_avg, rating_count, stock, product_images(url, position)")
     .order("rating_avg", { ascending: false })
     .order("slug", { ascending: true })
     .limit(8);
-  if (popRes.error) throw new Error(`popular: ${popRes.error.message}`);
+  if (topRes.error) throw new Error(`top rated: ${topRes.error.message}`);
+
+  const dealsRes = await supabase
+    .from("products")
+    .select("id, slug, title, brand, price_cents, discount_pct, rating_avg, rating_count, stock, product_images(url, position)")
+    .gt("discount_pct", 0)
+    .order("discount_pct", { ascending: false })
+    .order("slug", { ascending: true })
+    .limit(8);
+  if (dealsRes.error) throw new Error(`deals: ${dealsRes.error.message}`);
+
+  // One query feeds both the tile counts and the per-group rails:
+  // one row per (product, category-in-group), deduped by product id.
+  const membersRes = await supabase
+    .from("products")
+    .select(
+      "id, slug, title, brand, price_cents, discount_pct, rating_avg, rating_count, stock, categories!inner(nav_group_id), product_images(url, position)",
+    );
+  if (membersRes.error) throw new Error(`group members: ${membersRes.error.message}`);
 
   type ImgRow = {
     url: string;
@@ -83,39 +138,51 @@ export async function getHomeData(): Promise<{ groupTiles: GroupTileData[]; popu
     }
   }
 
+  type MemberRow = CardRow & { categories: { nav_group_id: string } };
+  const memberRows = (membersRes.data ?? []) as unknown as MemberRow[];
+  const counts = new Map<string, Set<string>>();
+  const membersByGroup = new Map<string, Map<string, CardRow>>();
+  for (const row of memberRows) {
+    const navId = row.categories.nav_group_id;
+    if (!counts.has(navId)) counts.set(navId, new Set());
+    counts.get(navId)!.add(row.id);
+    let bucket = membersByGroup.get(navId);
+    if (!bucket) {
+      bucket = new Map();
+      membersByGroup.set(navId, bucket);
+    }
+    const prev = bucket.get(row.id);
+    if (!prev || Number(row.rating_avg) > Number(prev.rating_avg)) bucket.set(row.id, row);
+  }
+
   const groupTiles: GroupTileData[] = (groupsRes.data ?? [])
     .filter((g) => bestProduct.has(g.id))
     .map((g) => {
       const best = bestProduct.get(g.id)!;
-      return { slug: g.slug, name: g.name, image: imageByProduct.get(best.id) ?? "" };
+      return {
+        slug: g.slug,
+        name: g.name,
+        image: imageByProduct.get(best.id) ?? "",
+        count: counts.get(g.id)?.size ?? 0,
+      };
     });
 
-  type PopRow = {
-    id: string;
-    slug: string;
-    title: string;
-    brand: string | null;
-    price_cents: number;
-    discount_pct: number;
-    rating_avg: number;
-    rating_count: number;
-    stock: number;
-    product_images: { url: string; position: number }[] | null;
-  };
-  const popular: ProductCardData[] = ((popRes.data ?? []) as PopRow[]).map((p) => ({
-    id: p.id,
-    slug: p.slug,
-    title: p.title,
-    brand: p.brand,
-    priceCents: p.price_cents,
-    discountPct: p.discount_pct,
-    ratingAvg: Number(p.rating_avg),
-    ratingCount: p.rating_count,
-    stock: p.stock,
-    image: firstImage(p.product_images),
-  }));
+  const groupRails = (groupsRes.data ?? [])
+    .map((g) => {
+      const bucket = membersByGroup.get(g.id);
+      if (!bucket || bucket.size === 0) return null;
+      const items = [...bucket.values()]
+        .sort((a, b) => Number(b.rating_avg) - Number(a.rating_avg) || (a.slug < b.slug ? -1 : 1))
+        .slice(0, 8)
+        .map(toCardData);
+      return { slug: g.slug, name: g.name, items };
+    })
+    .filter((r): r is { slug: string; name: string; items: ProductCardData[] } => r !== null);
 
-  return { groupTiles, popular };
+  const topRated = ((topRes.data ?? []) as CardRow[]).map(toCardData);
+  const deals = ((dealsRes.data ?? []) as CardRow[]).map(toCardData);
+
+  return { groupTiles, topRated, deals, groupRails };
 }
 
 // ---- category page ----

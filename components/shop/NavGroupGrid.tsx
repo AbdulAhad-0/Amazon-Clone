@@ -21,11 +21,16 @@ export function NavGroupGrid({ tiles }: NavGroupGridProps) {
           <div className="relative aspect-[4/3] w-full bg-white">
             <ProductImage alt={tile.name} src={tile.image} title={tile.name} />
           </div>
-          <div className="flex items-center justify-between px-3 py-2">
-            <span className="font-display text-base font-semibold text-ink group-hover:text-accent">
-              {tile.name}
-            </span>
-            <span aria-hidden="true" className="text-ink-muted">
+          <div className="flex items-center justify-between gap-2 px-3 py-2">
+            <div className="min-w-0">
+              <span className="font-display text-base font-semibold text-ink group-hover:text-accent">
+                {tile.name}
+              </span>
+              <p className="text-xs text-ink-muted">
+                {tile.count} {tile.count === 1 ? "product" : "products"}
+              </p>
+            </div>
+            <span aria-hidden="true" className="shrink-0 text-ink-muted">
               →
             </span>
           </div>

@@ -460,6 +460,130 @@ with sync_playwright() as p:
             except Exception:
                 pass
 
+    # ---------- Phase G: category page ----------
+    page.set_viewport_size({"width": 1280, "height": 900})
+    page.goto(f"{BASE}/c/electronics", wait_until="domcontentloaded")
+    page.wait_for_timeout(800)
+    check(
+        "G1 category band h1",
+        page.get_by_role("heading", level=1).inner_text().strip() == "Electronics",
+    )
+    chip_links = page.locator('nav[aria-label="Sub-categories"] a')
+    n_chips = chip_links.count()
+    check("G2 sub-category chips present", n_chips >= 2, f"chips={n_chips}")
+    chip_texts = [chip_links.nth(i).inner_text() for i in range(min(n_chips, 8))]
+    check("G2b chip labels carry counts", all("(" in t for t in chip_texts), str(chip_texts[:4]))
+    sub_href = chip_links.nth(1).get_attribute("href") or ""
+    check("G2c chip href carries cat param", "cat=" in sub_href, sub_href)
+    chip_links.nth(1).click()
+    page.wait_for_url("**cat=**", timeout=8000)
+    check("G2d chip click writes ?cat= URL state", "cat=" in page.url, page.url)
+
+    page.select_option("#rail-sort", "price_asc")
+    page.wait_for_url("**sort=price_asc**", timeout=8000)
+    check("G3 sort select writes sort=price_asc", "sort=price_asc" in page.url, page.url)
+
+    page.locator('label:has-text("On sale only")').first.click()
+    page.wait_for_url("**deals=1**", timeout=8000)
+    check("G4 deals checkbox writes deals=1", "deals=1" in page.url, page.url)
+
+    page.locator('input[name="rail-brand"]').nth(1).click()
+    page.wait_for_url("**brand=**", timeout=8000)
+    check("G5 brand radio writes brand param", "brand=" in page.url, page.url)
+    check("G5b active filter chips shown", page.get_by_label("Applied filters").count() >= 1)
+
+    page.goto(f"{BASE}/c/electronics", wait_until="domcontentloaded")
+    page.wait_for_timeout(700)
+    check("G6 top-rated rail on default category page", page.locator('[aria-label="Top rated"]').count() == 1)
+    page.goto(f"{BASE}/c/electronics?deals=1", wait_until="domcontentloaded")
+    page.wait_for_timeout(700)
+    check("G6b rail hidden when filters active", page.locator('[aria-label="Top rated"]').count() == 0)
+
+    page.goto(f"{BASE}/c/electronics?page=2", wait_until="domcontentloaded")
+    page.wait_for_timeout(700)
+    check(
+        "G7 pagination reaches page 2",
+        page.get_by_text(re.compile(r"Page 2 of \d+")).count() >= 1,
+    )
+
+    page.goto(f"{BASE}/c/definitely-not-a-group", wait_until="domcontentloaded")
+    page.wait_for_timeout(700)
+    check("G8 unknown group shows branded not-found", page.get_by_text("Page not found").count() >= 1)
+
+    page.goto(f"{BASE}/c/electronics", wait_until="domcontentloaded")
+    page.wait_for_timeout(700)
+    page.evaluate("() => window.scrollTo(0, document.body.scrollHeight)")
+    page.wait_for_timeout(1500)
+    page.evaluate("() => window.scrollTo(0, 0)")
+    page.wait_for_timeout(500)
+    page.screenshot(path=os.path.join(EV, "07-category.png"), full_page=True)
+
+    page.set_viewport_size({"width": 390, "height": 844})
+    page.reload(wait_until="domcontentloaded")
+    page.wait_for_timeout(900)
+    sw_cat = page.evaluate("() => document.documentElement.scrollWidth")
+    check("G9 category at 390: no horizontal scroll", sw_cat <= 391, f"scrollWidth={sw_cat}")
+    page.screenshot(path=os.path.join(EV, "07-category-mobile.png"), full_page=True)
+    page.set_viewport_size({"width": 1280, "height": 900})
+
+    # ---------- Phase H: home page + product evidence ----------
+    page.goto(f"{BASE}/", wait_until="domcontentloaded")
+    page.wait_for_timeout(900)
+    check(
+        "H1 hero headline",
+        "what you see" in page.get_by_role("heading", level=1).inner_text().lower(),
+    )
+    check("H2 Browse button present", page.get_by_role("link", name="Browse categories").count() == 1)
+    trust_n = page.locator('section[aria-label="Why shop here"] li').count()
+    check("H3 trust strip has 3 items", trust_n == 3, f"items={trust_n}")
+    check(
+        "H3b free-ship threshold from real constant",
+        page.get_by_text(re.compile(r"Free shipping over \$35")).count() >= 1,
+    )
+    tiles = page.locator('#shop-by-category a[href^="/c/"]')
+    check("H4 category tiles present", tiles.count() >= 4, f"tiles={tiles.count()}")
+    check(
+        "H4b tiles show real product counts",
+        re.search(r"\d+ products", page.locator("#shop-by-category").inner_text()) is not None,
+    )
+    top_rail = page.locator('section[aria-label="Top rated"]')
+    check(
+        "H5 Top rated rail with See all",
+        top_rail.count() == 1 and top_rail.get_by_role("link", name="See all →").count() == 1,
+    )
+    check("H6 Deals rail present", page.locator('section[aria-label="Deals"]').count() == 1)
+    group_rails = page.locator('section[aria-label^="Top rated in "]').count()
+    check("H7 per-group rails present", group_rails >= 4, f"rails={group_rails}")
+
+    resp = page.request.get(f"{BASE}/")
+    home_kb = len(resp.body()) / 1024
+    check("H8 home HTML size reported", home_kb < 800, f"{home_kb:.1f} KB")
+
+    page.evaluate("() => window.scrollTo(0, document.body.scrollHeight)")
+    page.wait_for_timeout(2500)
+    page.evaluate("() => window.scrollTo(0, 0)")
+    page.wait_for_timeout(500)
+    page.screenshot(path=os.path.join(EV, "06-home.png"), full_page=True)
+
+    page.set_viewport_size({"width": 390, "height": 844})
+    page.reload(wait_until="domcontentloaded")
+    page.wait_for_timeout(900)
+    sw_home = page.evaluate("() => document.documentElement.scrollWidth")
+    check("H9 home at 390: no horizontal scroll", sw_home <= 391, f"scrollWidth={sw_home}")
+    page.screenshot(path=os.path.join(EV, "06-home-mobile.png"), full_page=False)
+    page.set_viewport_size({"width": 1280, "height": 900})
+
+    pdp = pdp_a or "/p/huawei-matebook-x-pro"
+    page.goto(BASE + pdp, wait_until="domcontentloaded")
+    page.wait_for_timeout(900)
+    page.screenshot(path=os.path.join(EV, "08-product.png"), full_page=True)
+    page.set_viewport_size({"width": 390, "height": 844})
+    page.reload(wait_until="domcontentloaded")
+    page.wait_for_timeout(900)
+    sw_pdp = page.evaluate("() => document.documentElement.scrollWidth")
+    check("H10 product page at 390: no horizontal scroll", sw_pdp <= 391, f"scrollWidth={sw_pdp}")
+    page.screenshot(path=os.path.join(EV, "08-product-mobile.png"), full_page=True)
+
     browser.close()
 
 fails = [r for r in results if r[0] == "FAIL"]

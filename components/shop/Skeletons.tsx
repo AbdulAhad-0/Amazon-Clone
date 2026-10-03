@@ -11,7 +11,20 @@ export function CardSkeleton() {
 export function HomeSkeleton() {
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-4 py-8">
-      <div className="h-10 w-2/3 animate-pulse rounded bg-line" />
+      <div className="animate-pulse rounded-3xl border border-line bg-paper px-6 py-12 sm:py-16">
+        <div className="h-4 w-20 rounded bg-line" />
+        <div className="mt-4 h-10 w-3/4 rounded bg-line" />
+        <div className="mt-4 h-4 w-1/2 rounded bg-line" />
+        <div className="mt-6 h-10 w-40 rounded-full bg-line" />
+      </div>
+      <div className="grid gap-4 sm:grid-cols-3">
+        {Array.from({ length: 3 }, (_, i) => (
+          <div className="animate-pulse rounded-2xl border border-line bg-surface p-4" key={i}>
+            <div className="h-4 w-2/3 rounded bg-line" />
+            <div className="mt-2 h-3 w-full rounded bg-line" />
+          </div>
+        ))}
+      </div>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         {Array.from({ length: 6 }, (_, i) => (
           <div className="animate-pulse rounded-2xl border border-line bg-paper" key={i}>
@@ -20,9 +33,11 @@ export function HomeSkeleton() {
           </div>
         ))}
       </div>
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="flex gap-4 overflow-x-auto pb-2">
         {Array.from({ length: 8 }, (_, i) => (
-          <CardSkeleton key={i} />
+          <div className="w-44 shrink-0" key={i}>
+            <CardSkeleton />
+          </div>
         ))}
       </div>
     </div>

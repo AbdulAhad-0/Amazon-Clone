@@ -102,8 +102,8 @@ empty state and error state.
 ### F6 Orders
 - List (status filter), detail page, status timeline. Statuses: `placed | shipped | delivered |
   cancelled`. `shipped` and `delivered` are **derived from order age** (`ships_at = created_at +
-  24 h`, `delivered_at = created_at + 72 h` — business-rules table, ADR-015); the stored status
-  starts at `placed` and can only become `cancelled` (server-set).
+  15 minutes`, `delivered_at = created_at + 2 hours` — business-rules table, ADR-015; demo-time
+  lifecycle); the stored status starts at `placed` and can only become `cancelled` (server-set).
 - **Cancel** allowed while the effective status is `placed` (before `ships_at`): one
   `cancel_order` transaction sets `cancelled` + `cancelled_at`, appends an event, restores stock
   and sets the payment to **`refunded`**. Calling cancel twice is an **idempotent no-op** — no
@@ -132,7 +132,7 @@ empty state and error state.
 | **Effective price** | `floor(price_cents × (100 − discount_pct) / 100)` | `price_cents` is the **list price**. **One server function** `effective_price_cents(price_cents, discount_pct)` computes the discounted price; PDP, cart, checkout and `order_items.unit_price_cents` all use/snapshot it. |
 | **Shipping** | Free when subtotal ≥ **$35.00** (3500¢); else flat **$5.99** (599¢) | Server-computed; threshold shown in cart/checkout. |
 | **Tax** | Flat estimated **8%** of subtotal, rounded to the nearest cent | Demo estimate — not a real tax engine. |
-| **Order age → status** | `ships_at = created_at + 24 h`, `delivered_at = created_at + 72 h` | Drives derived `shipped` / `delivered` (ADR-015). Cancel exists only before `ships_at`. |
+| **Order age → status** | `ships_at = created_at + 15 minutes`, `delivered_at = created_at + 2 hours` | Drives derived `shipped` / `delivered` (ADR-015); full lifecycle visible within a demo. Cancel exists only while effective status is `placed` (before `ships_at`). |
 | **Payment expiry** | Mock payment valid **15 minutes** (`payments.expires_at`) | Expired → `place_order` raises, no writes. Card data never stored/logged (ADR-010). |
 
 *Edit values here — architecture and every plan read from this table.*

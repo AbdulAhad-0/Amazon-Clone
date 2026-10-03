@@ -120,8 +120,8 @@ transaction:
    exactly → else `RAISE`.
 3. **Lock products `FOR UPDATE` in a deterministic order (`ORDER BY id`)** and re-check stock for
    every line → else `RAISE 'insufficient stock'`.
-4. Insert `orders` (`status='placed'`, `ships_at = created_at + 24h`, `delivered_at = created_at
-   + 72h`, `payment_id`, address snapshot, totals) → **unique violation on `payment_id` = already
+4. Insert `orders` (`status='placed'`, `ships_at = created_at + 15 min`, `delivered_at = created_at
+   + 2 h`, `payment_id`, address snapshot, totals) → **unique violation on `payment_id` = already
    processed → return the existing order id** (idempotency).
 5. Insert `order_items` (`unit_price_cents` = effective-price snapshot), insert
    `order_events('placed')`.

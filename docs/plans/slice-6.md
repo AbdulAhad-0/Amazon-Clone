@@ -66,7 +66,7 @@ GRANT  EXECUTE ON FUNCTION place_order(uuid, jsonb, uuid) TO service_role;
 - No `p_items` — reads `cart_items` for `p_user_id`; computes lines with `effective_price_cents(price_cents, discount_pct)`, then shipping + tax per spec business-rules table; compares against `payments.amount_cents`.
 
 - [ ] **Step 1 (failing tests):**
-  1. happy path: seed `succeeded` payment (amount = server total) + 2 cart lines → returns uuid; order/items/event exist; `ships_at = created_at + 24h`, `delivered_at = created_at + 72h`; stock decreased by qty; cart empty.
+  1. happy path: seed `succeeded` payment (amount = server total) + 2 cart lines → returns uuid; order/items/event exist; `ships_at = created_at + 15 min`, `delivered_at = created_at + 2 h`; stock decreased by qty; cart empty.
   2. idempotency: call again same `p_payment_id` → same uuid, `orders count = 1`, stock **not** decreased twice.
   3. bad payment (`status='pending'`) → raises, zero writes.
   4. expired payment (backdated `expires_at`) → raises, zero writes.

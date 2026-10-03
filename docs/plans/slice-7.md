@@ -50,7 +50,7 @@ GRANT  EXECUTE ON FUNCTION cancel_order(uuid, uuid) TO service_role;
 
 Semantics (architecture §6): lock order; wrong user → raise; **already `cancelled` → return (no-op)**; effective status ≠ `placed` (i.e. `now() >= ships_at`) → raise `'already shipped'`; set `status='cancelled'`, `cancelled_at=now()`; append `order_events('cancelled')`; restore stock (`ORDER BY id`); set payment `status='refunded'`.
 
-- [ ] **Step 1 (failing tests):** ① owner cancels a `placed` order (< 24 h) → status `cancelled`, event appended, stock restored by qty, payment `refunded`; ② **second cancel → clean return, stock identical to post-first-cancel value**; ③ non-owner → raises; ④ order with backdated `created_at` (≥ 24 h, derived shipped) → raises; ⑤ user B `select` of A's order → 0 rows; ⑥ anon `select cancel_order(...)` → permission denied.
+- [ ] **Step 1 (failing tests):** ① owner cancels a `placed` order (fresh, before `ships_at`) → status `cancelled`, event appended, stock restored by qty, payment `refunded`; ② **second cancel → clean return, stock identical to post-first-cancel value**; ③ non-owner → raises; ④ order with backdated `created_at` (past `ships_at`, derived shipped) → raises; ⑤ user B `select` of A's order → 0 rows; ⑥ anon `select cancel_order(...)` → permission denied.
 - [ ] **Step 2:** Apply migration → run tests → PASS (6/6). Commit.
 
 ### Task 2: Orders list (status tabs without `paid`)
@@ -80,5 +80,5 @@ Semantics (architecture §6): lock order; wrong user → raise; **already `cance
 - [ ] **Step 1:** Timeline component takes `{ createdAt, shipsAt, deliveredAt, cancelledAt }` + events; renders labels + formatted dates.
 - [ ] **Step 2:** `cancelOrder` server action: `getUser()` → call `cancel_order` via admin client → success → `revalidatePath('/orders')`. Second invocation returns success with unchanged state (function no-op).
 - [ ] **Step 3:** `CancelButton`: startTransition + confirm dialog; on success badge flips to `cancelled`, button disappears; if the action errors with `'already shipped'` show "This order has already shipped."
-- [ ] **Step 4:** Verify manually (screenshots → `docs/evidence/07-*.png`): cancel a fresh order → status `cancelled`, payment `refunded` (SQL check), **stock on its PDP increased** (note numbers before/after); click cancel twice quickly → stock restored once; force a `created_at` ≥ 24 h test order → cancel button hidden + direct action call rejected.
+- [ ] **Step 4:** Verify manually (screenshots → `docs/evidence/07-*.png`): cancel a fresh order → status `cancelled`, payment `refunded` (SQL check), **stock on its PDP increased** (note numbers before/after); click cancel twice quickly → stock restored once; force a test order with `created_at` past `ships_at` → cancel button hidden + direct action call rejected.
 - [ ] **Step 5:** `npm run lint && npx tsc --noEmit && npx vitest run && npm run build` → clean. Update `docs/progress.md`. Commit.

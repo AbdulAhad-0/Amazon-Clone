@@ -85,9 +85,10 @@ Context: dark theme is NICE-TO-HAVE; palette fixed by owner. Decision: all colou
 token-file swap later. Consequence: components must not hardcode hex values.
 
 ### ADR-015 · Order statuses derived from age — Accepted
-Context: a demo cannot wait 24 h to ship an order; storing a fake `shipped` flag invites client
+Context: a demo cannot wait for real shipping; storing a fake `shipped` flag invites client
 tampering. Decision: statuses are `placed | shipped | delivered | cancelled`. The server sets
-`ships_at = created_at + 24 h` and `delivered_at = created_at + 72 h` at order creation;
+`ships_at = created_at + 15 minutes` and `delivered_at = created_at + 2 hours` at order creation
+(demo-time lifecycle, owner sync 2026-10-03);
 `shipped`/`delivered` are **derived** from those timestamps by one SQL helper reused by API and UI.
 Only `cancelled` is ever written after `placed`. Consequence: timeline UI reads events for
 placed/cancelled and timestamps for shipped/delivered; thresholds live in the spec business-rules
